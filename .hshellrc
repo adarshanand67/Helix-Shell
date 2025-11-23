@@ -1,0 +1,163 @@
+# HelixShell Configuration File (.hshellrc)
+# This file configures the appearance and behavior of HelixShell (hsh)
+# Place this file in your home directory (~/.hshellrc) for user-specific settings
+# or in the current directory for project-specific settings
+
+# ------------------------------------------------------------------------------
+# COLOR SCHEME CONFIGURATION
+# Define colors using ANSI escape sequences or named colors
+# ------------------------------------------------------------------------------
+
+# Status indicator colors (✓ for success, ✗ for error)
+[colors.status]
+success = "\033[32m"      # Green for ✓
+error = "\033[31m"        # Red for ✗
+reset = "\033[0m"
+
+# Primary UI elements
+[colors.primary]
+bold = "\033[1m"          # Bold text
+reset = "\033[0m"
+
+# Prompt text colors
+[colors.prompt]
+user_host = "\033[96m"    # Bright cyan for user@hostname
+directory = "\033[94m"    # Bright blue for current directory
+reset = "\033[0m"
+
+# Git integration colors
+[colors.git]
+prefix = "\033[90m"       # Bright black for "on"
+symbol = "\033[95m"       # Bright magenta for ± symbol
+branch = "\033[33m"       # Yellow for branch name
+reset = "\033[0m"
+
+# Shell prompt symbol
+[colors.shell]
+prompt_symbol = "\033[92m" # Bright green for ❯
+reset = "\033[0m"
+
+# ------------------------------------------------------------------------------
+# PROMPT FORMAT CONFIGURATION
+# Define how the prompt appears and behaves
+# Variables: {status} {user} {hostname} {cwd} {git} {jobs}
+# ------------------------------------------------------------------------------
+
+[prompt]
+# Main prompt format (shown before each command)
+# Default: "{status} {user}@{hostname}:{cwd}{git}\n{arrow} "
+format = "{status} {user}@{hostname}:{cwd}{git}\n{arrow} "
+
+# How to shorten long directory paths (keep first/last parts)
+[prompt.path_shortening]
+enabled = true
+max_length = 40
+separator = "..."
+
+# Git branch display settings
+[prompt.git]
+enabled = true
+prefix = " on "          # Text before branch info
+symbol = "±"           # Git symbol
+detached_head_length = 7 # Length of commit hash to show when detached
+
+# ------------------------------------------------------------------------------
+# FORMATTING THEMES
+# Preset color schemes (uncomment one to use)
+# ------------------------------------------------------------------------------
+
+# Classic monochrome theme
+#[theme "mono"]
+#status.success = "\033[1m"
+#status.error = "\033[4m"    # Underlined for errors
+#prompt.user_host = "\033[1m"
+#prompt.directory = "\033[4m" # Underlined
+#git.branch = "\033[1m"
+#shell.prompt_symbol = "\033[1m"
+
+# Solarized Dark theme
+#[theme "solarized_dark"]
+#status.success = "\033[32m"    # Base02 green
+#status.error = "\033[31m"      # Base02 red
+#prompt.user_host = "\033[36m"  # Base0 cyan
+#prompt.directory = "\033[32m"  # Base01 green
+#git.branch = "\033[33m"        # Base00 yellow
+#shell.prompt_symbol = "\033[32m" # Base01 green
+
+# Gruvbox theme
+#[theme "gruvbox"]
+#status.success = "\033[32m"    # Green
+#status.error = "\033[31m"      # Red
+#prompt.user_host = "\033[36m"  # Cyan
+#prompt.directory = "\033[34m"  # Blue
+#git.branch = "\033[33m"        # Yellow
+#shell.prompt_symbol = "\033[32m" # Green
+
+# Dracula theme
+#[theme "dracula"]
+#status.success = "\033[38;5;84m"  # Green
+#status.error = "\033[38;5;196m"   # Red
+#prompt.user_host = "\033[38;5;117m" # Cyan
+#prompt.directory = "\033[38;5;141m" # Purple
+#git.branch = "\033[38;5;215m"    # Orange
+#shell.prompt_symbol = "\033[38;5;84m" # Green
+
+# ------------------------------------------------------------------------------
+# BEHAVIOR CONFIGURATION
+# Misc settings
+# ------------------------------------------------------------------------------
+
+[behavior]
+# History
+history.enabled = true
+history.max_size = 1000
+
+# Auto-completion
+completion.enabled = true
+completion.show_all_on_tab = true
+
+# Job control
+jobs.show_notifications = true
+
+# ------------------------------------------------------------------------------
+# EXAMPLE CUSTOM FORMATS
+# Uncomment and modify these for custom prompt styles
+# ------------------------------------------------------------------------------
+
+# Powerline-style prompt (requires special font support)
+#[prompt.format.powerline]
+#format = " {status} {user}@{hostname}  {cwd} {git}\n{prompt_symbol} "
+
+# Simple minimal prompt
+#[prompt.format.minimal]
+#format = "{cwd}{git} {prompt_symbol} "
+
+# Full featured prompt with time
+#[prompt.format.full]
+#format = "[{time}] {status} {user}@{hostname}:{cwd}{git}\n{prompt_symbol} "
+
+# ------------------------------------------------------------------------------
+# HELPER COMMENTS (These don't affect functionality)
+# ------------------------------------------------------------------------------
+
+# Color Format Codes:
+# \033[0m  = Reset
+# \033[1m  = Bold
+# \033[4m  = Underlined
+# \033[30-37m = Foreground colors (30=black, 31=red, 32=green, 33=yellow, 34=blue, 35=magenta, 36=cyan, 37=white)
+# \033[90-97m = Bright foreground colors
+# \033[40-47m = Background colors
+# \033[100-107m = Bright background colors
+
+# Variable Reference:
+# {status}     - Success/error indicator (✓ or ✗ with color)
+# {user}       - Current username
+# {hostname}   - System hostname
+# {cwd}        - Current working directory (shortened)
+# {git}        - Git branch info (if in repo)
+# {jobs}       - Number of background jobs (if any)
+# {arrow}      - Prompt symbol (❯ with color)
+# {time}       - Current time (HH:MM:SS)
+
+# Example configurations are in comments above. To use a theme, remove the comment markers.
+# Valid theme names must start with their section name, e.g., [theme "mytheme"]
