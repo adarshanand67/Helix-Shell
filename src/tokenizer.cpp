@@ -132,7 +132,16 @@ bool Tokenizer::handleSpecialTokens(const std::string& input, size_t i, std::vec
         current.clear();
     }
 
-    // Check for multi-character tokens first
+    // Check for 3-character tokens first
+    if (i + 2 < input.length()) {
+        std::string three = input.substr(i, 3);
+        if (three == "2>>") {
+            tokens.push_back({TokenType::REDIRECT_ERR_APPEND, "2>>"});
+            return true;
+        }
+    }
+
+    // Check for multi-character tokens
     if (i + 1 < input.length()) {
         std::string two = input.substr(i, 2);
 
@@ -180,10 +189,9 @@ size_t Tokenizer::getTokenLength(const std::string& input, size_t i) {
         if (i + 2 < input.length()) {
             std::string three = input.substr(i, 3);
             if (three == "2>>") return 3;
-            if (three == "2>") return 2;
         }
-        // Just "2" by itself - not a special token
-        return 0;
+        // For "2>", advance 2 characters
+        return 2;
     }
 
     if (i + 1 < input.length()) {
@@ -194,5 +202,4 @@ size_t Tokenizer::getTokenLength(const std::string& input, size_t i) {
     // Single character tokens
     return 1;
 }
-
 } // namespace hshell
