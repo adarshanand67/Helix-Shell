@@ -5,6 +5,39 @@
 [![Coverage Target](https://img.shields.io/badge/coverage%20target-100%25-blue)](https://github.com/adarshanand67/Helix-Shell)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+A modern Unix shell with advanced features including autocompletion, colored prompts with Git integration, job control, pipelines, and I/O redirection.
+
+## Quick Start
+
+### Installation
+
+#### macOS (Homebrew) - Recommended
+
+```bash
+brew tap adarshanand67/helix-shell
+brew install helix-shell
+helix
+```
+
+#### From Source
+
+```bash
+git clone https://github.com/adarshanand67/Helix-Shell.git
+cd Helix-Shell
+./setup.sh      # Install dependencies
+make build      # Build the shell
+./build/hsh     # Run it
+```
+
+### Features
+
+- **TAB Autocompletion**: Complete commands and file paths with TAB
+- **Colored Prompt**: Beautiful prompt with Git branch integration and status indicators
+- **Command History**: Navigate with arrow keys, search with Ctrl+R
+- **Job Control**: Background jobs with `jobs`, `fg`, `bg` commands
+- **Pipelines**: Chain commands with `|` operator
+- **I/O Redirection**: Support for `>`, `<`, `>>`, `2>`, `&>`
+
 ## UML Class Diagram
 
 ```mermaid
