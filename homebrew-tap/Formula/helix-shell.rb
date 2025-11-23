@@ -2,7 +2,7 @@ class HelixShell < Formula
   desc "Modern Unix shell with advanced features, autocompletion, and job control"
   homepage "https://github.com/adarshanand67/Helix-Shell"
   url "https://github.com/adarshanand67/Helix-Shell/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "" # Will be calculated after creating the release
+  sha256 "e153f18e86e1be877e2b5f9f3ed1378d4a67ce3d9d4038eb42d697a4ced93d35"
   license "MIT"
   head "https://github.com/adarshanand67/Helix-Shell.git", branch: "master"
 
