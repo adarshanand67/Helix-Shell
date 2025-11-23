@@ -24,12 +24,12 @@ TEST_DIR := tests
 BUILD_DIR := build
 
 # Source files
-SOURCES := $(SRC_DIR)/main.cpp $(SRC_DIR)/shell.cpp $(SRC_DIR)/tokenizer.cpp $(SRC_DIR)/parser.cpp $(SRC_DIR)/executor.cpp $(SRC_DIR)/readline_support.cpp
+SOURCES := $(SRC_DIR)/main.cpp $(SRC_DIR)/shell.cpp $(SRC_DIR)/tokenizer.cpp $(SRC_DIR)/parser.cpp $(SRC_DIR)/executor.cpp $(SRC_DIR)/readline_support.cpp $(SRC_DIR)/prompt.cpp
 TEST_SOURCES := $(TEST_DIR)/test_main.cpp $(TEST_DIR)/test_executor.cpp $(TEST_DIR)/test_integration.cpp $(TEST_DIR)/test_tokenizer.cpp $(TEST_DIR)/test_parser.cpp $(TEST_DIR)/test_shell.cpp
 
 # Object files
 MAIN_OBJECTS := $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
-TEST_OBJECTS := $(TEST_SOURCES:$(TEST_DIR)/%.cpp=$(BUILD_DIR)/%.o) $(BUILD_DIR)/tokenizer.o $(BUILD_DIR)/parser.o $(BUILD_DIR)/executor.o $(BUILD_DIR)/shell.o $(BUILD_DIR)/readline_support.o
+TEST_OBJECTS := $(TEST_SOURCES:$(TEST_DIR)/%.cpp=$(BUILD_DIR)/%.o) $(BUILD_DIR)/tokenizer.o $(BUILD_DIR)/parser.o $(BUILD_DIR)/executor.o $(BUILD_DIR)/shell.o $(BUILD_DIR)/readline_support.o $(BUILD_DIR)/prompt.o
 
 # Executables
 MAIN_EXE := $(BUILD_DIR)/hsh
@@ -127,11 +127,12 @@ $(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
 
 # Dependencies
 $(BUILD_DIR)/main.o: include/shell.h
-$(BUILD_DIR)/shell.o: include/shell.h include/tokenizer.h include/parser.h include/executor.h include/types.h include/readline_support.h
+$(BUILD_DIR)/shell.o: include/shell.h include/tokenizer.h include/parser.h include/executor.h include/types.h include/readline_support.h include/prompt.h
 $(BUILD_DIR)/tokenizer.o: include/tokenizer.h include/types.h
 $(BUILD_DIR)/parser.o: include/parser.h include/tokenizer.h include/types.h
 $(BUILD_DIR)/executor.o: include/executor.h include/types.h
 $(BUILD_DIR)/readline_support.o: include/readline_support.h
+$(BUILD_DIR)/prompt.o: include/prompt.h
 
 # Test dependencies
 $(BUILD_DIR)/test_executor.o: tests/test_helpers.h

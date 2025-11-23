@@ -60,6 +60,7 @@ set(CORE_SOURCES
     src/parser.cpp
     src/executor.cpp
     src/readline_support.cpp
+    src/prompt.cpp
 )
 
 # All source files including main.cpp

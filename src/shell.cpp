@@ -1,33 +1,19 @@
-#include "shell.h" // Includes the Shell class definition, providing run() method for the main REPL loop, prompt display, input reading, and built-in command handling.
-#include "tokenizer.h" // Includes the Tokenizer class header, providing tokenize() method to split input strings into tokens (words, pipes, redirections, etc.).
-#include "parser.h" // Includes the Parser class header, providing parse() method to convert token sequences into ParsedCommand structures with pipelines and redirections.
-#include "readline_support.h" // Readline library integration for advanced autocompletion
-#include <iostream> // Provides standard I/O streams: std::cout for displaying prompt, history, and debug output; std::cin for reading user input - essential for REPL interaction.
-#include <iomanip> // Provides stream manipulators: std::setw, std::setfill for formatted output, specifically used in history command display.
-#include <unistd.h> // Provides Unix system calls: getuid, getcwd, chdir for user and directory management; gethostname for system hostname retrieval - used in prompt building and cd command.
-#include <pwd.h> // Provides password database functions: getpwuid for accessing user information struct - used to determine username and home directory.
-#include <cstring> // Provides C-style string functions: strerror for converting errno to readable strings - used in error messages for cd command failures.
-#include <cstdlib> // Provides general utilities: getenv, setenv for environment variable access and setting (USER, LOGNAME, OLDPWD, PWD) - crucial for prompt and cd functionality.
-#include <sys/stat.h> // Provides file status functions: (currently unused directly, but included for potential file operations or directory checks).
-#include <dirent.h> // Provides directory reading functions: opendir, readdir for path autocompletion.
-#include <fstream> // Provides file stream operations for reading git branch information.
-#include <sstream> // Provides string stream operations for parsing git branch information.
+#include "shell.h"
+#include "tokenizer.h"
+#include "parser.h"
+#include "readline_support.h"
+#include <iostream>
+#include <iomanip>
+#include <unistd.h>
+#include <pwd.h>
+#include <cstring>
+#include <cstdlib>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fstream>
+#include <sstream>
 
 namespace helix {
-
-// ANSI color codes for beautiful prompts
-namespace Colors {
-    const std::string RESET = "\033[0m";
-    const std::string BOLD = "\033[1m";
-    const std::string GREEN = "\033[32m";
-    const std::string RED = "\033[31m";
-    const std::string YELLOW = "\033[33m";
-    const std::string BRIGHT_BLACK = "\033[90m";
-    const std::string BRIGHT_GREEN = "\033[92m";
-    const std::string BRIGHT_BLUE = "\033[94m";
-    const std::string BRIGHT_MAGENTA = "\033[95m";
-    const std::string BRIGHT_CYAN = "\033[96m";
-}
 
 Shell::Shell() : running(true) {
     // Initialize readline for advanced autocompletion
@@ -51,7 +37,7 @@ Shell::Shell() : running(true) {
         current_directory = cwd;
     }
 
-    // Set up basic prompt
+    // Set up prompt with user and host info
     char* user = getenv("USER");
     if (!user) {
         user = getenv("LOGNAME");
@@ -62,10 +48,14 @@ Shell::Shell() : running(true) {
 
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == 0) {
-        prompt_format = std::string(user ? user : "user") + "@" + hostname + ":";
+        prompt.setUserHost(user ? user : "user", hostname);
     } else {
-        prompt_format = std::string(user ? user : "user") + "@helix:";
+        prompt.setUserHost(user ? user : "user", "helix");
     }
+
+    prompt.setHomeDirectory(home_directory);
+    prompt.setCurrentDirectory(current_directory);
+    prompt.setLastExitStatus(last_exit_status);
 }
 
 Shell::~Shell() {
@@ -92,45 +82,12 @@ int Shell::run() {
 }
 
 void Shell::showPrompt() {
-    std::string cwd_display = current_directory;
+    // Update the prompt with current state
+    prompt.setCurrentDirectory(current_directory);
+    prompt.setLastExitStatus(last_exit_status);
 
-    // Replace home directory with ~
-    if (!home_directory.empty() && current_directory.find(home_directory) == 0) {
-        cwd_display = "~" + current_directory.substr(home_directory.length());
-    }
-
-    // Shorten long paths (keep first and last parts)
-    if (cwd_display.length() > 40) {
-        size_t slash_pos = cwd_display.find('/', 1);
-        if (slash_pos != std::string::npos && slash_pos < cwd_display.length() - 20) {
-            std::string start = cwd_display.substr(0, slash_pos + 1);
-            std::string end = cwd_display.substr(cwd_display.length() - 20);
-            cwd_display = start + "..." + end;
-        }
-    }
-
-    // Get Git branch if in a Git repository
-    std::string git_branch = getGitBranch();
-    std::string git_info = "";
-    if (!git_branch.empty()) {
-        git_info = " " + Colors::BRIGHT_BLACK + "on" + Colors::RESET +
-                   " " + Colors::BRIGHT_MAGENTA + "±" + Colors::RESET +
-                   " " + Colors::YELLOW + git_branch + Colors::RESET;
-    }
-
-    // Status indicator (✓ for success, ✗ for error)
-    std::string status_icon = last_exit_status == 0 ?
-        Colors::GREEN + "✓" + Colors::RESET :
-        Colors::RED + "✗" + Colors::RESET;
-
-    // Build beautiful prompt:
-    // ✓ user@host ~/path on ± branch
-    // ❯
-    std::cout << status_icon << " "
-              << Colors::BRIGHT_CYAN << Colors::BOLD << prompt_format << Colors::RESET
-              << Colors::BRIGHT_BLUE << cwd_display << Colors::RESET
-              << git_info << "\n"
-              << Colors::BRIGHT_GREEN << "❯" << Colors::RESET << " ";
+    // Generate and display the prompt
+    std::cout << prompt.generate();
 
     std::cout.flush(); // Ensure prompt is displayed immediately
 }
@@ -301,37 +258,7 @@ void Shell::resumeInBackground(int job_id) {
     std::cout << "Resuming job " << job_id << " in background\n";
 }
 
-// Get current Git branch name
-std::string Shell::getGitBranch() const {
-    // Check if .git directory exists
-    std::string git_dir = current_directory + "/.git";
-    struct stat st;
-    if (stat(git_dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)) {
-        // Not a git repo, check parent directories
-        return "";
-    }
 
-    // Read .git/HEAD file to get current branch
-    std::string head_file = git_dir + "/HEAD";
-    std::ifstream file(head_file);
-    if (!file.is_open()) {
-        return "";
-    }
-
-    std::string line;
-    if (std::getline(file, line)) {
-        // Format: ref: refs/heads/branch-name
-        if (line.find("ref: refs/heads/") == 0) {
-            return line.substr(16); // Extract branch name
-        }
-        // Detached HEAD state
-        if (line.length() >= 7) {
-            return line.substr(0, 7); // Show short commit hash
-        }
-    }
-
-    return "";
-}
 
 // Get command completions from PATH
 std::vector<std::string> Shell::getCommandCompletions(const std::string& partial) const {

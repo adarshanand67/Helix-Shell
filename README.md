@@ -92,6 +92,36 @@ class ParsedCommand {
     +bool background
 }
 
+class Colors {
+    <<namespace>>
+    +const std::string RESET
+    +const std::string BOLD
+    +const std::string GREEN
+    +const std::string RED
+    +const std::string YELLOW
+    +const std::string BRIGHT_BLACK
+    +const std::string BRIGHT_GREEN
+    +const std::string BRIGHT_BLUE
+    +const std::string BRIGHT_MAGENTA
+    +const std::string BRIGHT_CYAN
+}
+
+class Prompt {
+    +Prompt()
+    +setUserHost(...) void
+    +setCurrentDirectory(...) void
+    +setHomeDirectory(...) void
+    +setLastExitStatus(int) void
+    +generate() const std::string
+    -getGitBranch() const std::string
+    -shortenPath(...) const std::string
+    -std::string user_
+    -std::string host_
+    -std::string current_directory_
+    -std::string home_directory_
+    -int last_exit_status_
+}
+
 class Tokenizer {
     +tokenize(const std::string&) std::vector<Token>
     -processNormalState(...)
@@ -136,12 +166,12 @@ class Shell {
     -resumeInBackground(int)
     -std::string current_directory
     -std::string home_directory
-    -std::string prompt_format
     -bool running
     -int last_exit_status
     -Tokenizer tokenizer
     -Parser parser
     -Executor executor
+    -Prompt prompt
     -std::map<std::string, std::string> environment
     -std::vector<std::string> command_history
     -std::map<int, Job> jobs
@@ -176,8 +206,10 @@ Parser ..> CommandPipeline : creates
 Shell --> Tokenizer : uses
 Shell --> Parser : uses
 Shell --> Executor : uses
+Shell --> Prompt : uses
 Shell --> Job : manages
 Executor ..> Command : executes
+Prompt ..> Colors : uses
 ParsedCommand --> CommandPipeline : contains
 CommandPipeline --> Command : contains
 Job --> JobStatus : has

@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "executor.h"
 #include "readline_support.h"
+#include "prompt.h"
 #include <string>
 #include <vector>
 
@@ -29,10 +30,6 @@ private:
     std::string readInput();
     bool processInput(const std::string& input);
 
-    // Prompt enhancement
-    std::string getGitBranch() const;
-    std::string getColoredPrompt();
-
     // Autocompletion
     std::vector<std::string> getCommandCompletions(const std::string& partial) const;
     std::vector<std::string> getPathCompletions(const std::string& partial) const;
@@ -41,7 +38,6 @@ private:
     // State
     std::string current_directory;
     std::string home_directory;
-    std::string prompt_format;
     bool running;
     int last_exit_status = 0;
 
@@ -49,6 +45,9 @@ private:
     Tokenizer tokenizer;
     Parser parser;
     Executor executor;
+
+    // Prompt generator
+    Prompt prompt;
 
     // Shell environment
     std::map<std::string, std::string> environment;
