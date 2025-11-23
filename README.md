@@ -867,6 +867,8 @@ make test
 - ✅ **Built-in Commands**: `cd` (with `-` support), `exit`, `history`, `jobs`, `pwd`, `export`
 - ✅ **Error Handling**: Proper error messages and exit codes
 - ✅ **Background Jobs**: `&` operator implemented - processes run in background without blocking shell
+- ✅ **SIGCHLD Signal Handling**: Automatic background job completion tracking with signal-safe implementation
+- ✅ **Job Status Notifications**: Background jobs print "Done" or "Terminated" notifications when complete
 - ✅ **`pwd` built-in**: Print working directory
 - ✅ **`export` built-in**: Set environment variables for child processes
-- ⚠️  **Job Control**: `fg`, `bg` commands are placeholders (SIGCHLD/signal handling not yet implemented)
+- ⚠️  **Job Control**: `fg`, `bg` commands are placeholders (need process group management with setpgid/tcsetpgrp)
