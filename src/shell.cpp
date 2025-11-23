@@ -12,8 +12,28 @@
 #include <dirent.h>
 #include <fstream>
 #include <sstream>
+#include <csignal>
+#include <sys/wait.h>
 
 namespace helix {
+
+// Global pointer to JobManager for signal handler access
+// This is necessary because signal handlers must be static/global functions
+static IJobManager* g_job_manager = nullptr;
+
+// SIGCHLD signal handler - called when a child process terminates or stops
+// Must be signal-safe (avoid malloc, I/O operations, etc.)
+static void sigchld_handler(int /* sig */) {
+    // Save and restore errno to be signal-safe
+    int saved_errno = errno;
+
+    // Check for completed jobs using the global job manager
+    if (g_job_manager) {
+        static_cast<JobManager*>(g_job_manager)->checkCompletedJobs();
+    }
+
+    errno = saved_errno;
+}
 
 Shell::Shell()
     : builtin_dispatcher(std::make_unique<BuiltinCommandDispatcher>()),
@@ -23,6 +43,18 @@ Shell::Shell()
     state.running = true;
     state.job_manager = job_manager.get();
     state.prompt = &prompt;
+
+    // Set up global job manager pointer for signal handler
+    g_job_manager = job_manager.get();
+
+    // Set up SIGCHLD handler to automatically track background job completion
+    struct sigaction sa;
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP; // Restart interrupted syscalls, ignore stopped children
+    if (sigaction(SIGCHLD, &sa, nullptr) == -1) {
+        std::cerr << "Warning: Failed to set up SIGCHLD handler\n";
+    }
 
     // Initialize readline for advanced autocompletion
     ReadlineSupport::initialize();
@@ -67,6 +99,9 @@ Shell::Shell()
 }
 
 Shell::~Shell() {
+    // Clear global job manager pointer
+    g_job_manager = nullptr;
+
     // Clean up readline
     ReadlineSupport::cleanup();
 }
@@ -75,6 +110,11 @@ int Shell::run() {
     std::cout << "Helix Shell (helix) v2.0 - Type 'exit' to quit\n";
 
     while (state.running) {
+        // Check for and print completed background job notifications
+        if (job_manager) {
+            static_cast<JobManager*>(job_manager.get())->printAndCleanCompletedJobs();
+        }
+
         showPrompt();
 
         std::string input = readInput();

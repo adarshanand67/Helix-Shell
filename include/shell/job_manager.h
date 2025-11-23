@@ -37,6 +37,16 @@ public:
     // Get jobs map (for direct access)
     const std::map<int, Job>& getJobs() const override { return jobs; }
 
+    // Update job status based on PID (for SIGCHLD handler)
+    void updateJobStatus(pid_t pid, JobStatus status);
+
+    // Check and reap completed jobs (called from signal handler)
+    void checkCompletedJobs();
+
+    // Print notifications for completed jobs and clean them up
+    // This should be called from the main loop (not signal handler)
+    void printAndCleanCompletedJobs();
+
 private:
     std::map<int, Job> jobs;
     int next_job_id = 1;
