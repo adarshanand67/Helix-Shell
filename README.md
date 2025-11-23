@@ -496,6 +496,24 @@ Run the automated setup script:
 ./scripts/setup.sh
 ```
 
+#### Configuration
+
+Customize your HelixShell experience with `.hshellrc`:
+
+```bash
+# Copy the example config to your home directory
+cp .hshellrc ~/.hshellrc
+
+# Edit colors, themes, and prompt format
+nano ~/.hshellrc
+```
+
+Features:
+- **Color Themes**: Choose from preset themes (Solarized, Gruvbox, Dracula, etc.)
+- **Custom Prompts**: Design your own prompt format with variables
+- **Git Integration**: Customize Git branch display
+- **Behavior Settings**: Configure history, completion, and job control
+
 This script will automatically install and verify:
 - **Make**: Build system
 - **pkg-config**: Build configuration tool
