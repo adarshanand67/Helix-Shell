@@ -6,6 +6,7 @@
 #include <cstring> // Provides C-style string functions: strerror for converting errno codes to readable error messages - used in file operation error reporting.
 #include <sys/stat.h> // Provides file status functions: stat for retrieving file information, S_ISREG and S_IXUSR for checking if a file is a regular executable - used in PATH searching.
 #include <cstdlib> // Provides general utilities: getenv for accessing environment variables like PATH - essential for searching for executable commands.
+#include <regex> // Provides regular expressions for environment variable expansion.
 
 namespace hshell {
 
@@ -350,20 +351,62 @@ void Executor::reportError(const std::string& message) {
     std::cerr << "Executor error: " << message << "\n";
 }
 
+std::string Executor::expandEnvironmentVariables(const std::string& input) {
+    std::string result = input;
+
+    // Regular expression to match $VAR or ${VAR}
+    std::regex var_regex(R"(\$\{([^}]+)\}|\$([A-Za-z_][A-Za-z0-9_]*))");
+
+    std::smatch match;
+    std::string::const_iterator search_start(input.cbegin());
+
+    while (std::regex_search(search_start, input.cend(), match, var_regex)) {
+        std::string var_name;
+        if (!match[1].str().empty()) {
+            // ${VAR} format
+            var_name = match[1].str();
+        } else if (!match[2].str().empty()) {
+            // $VAR format
+            var_name = match[2].str();
+        }
+
+        // Get the environment variable value
+        const char* var_value = getenv(var_name.c_str());
+        std::string replacement = var_value ? var_value : "";
+
+        // Replace the variable in the result
+        size_t pos = result.find(match[0].str());
+        if (pos != std::string::npos) {
+            result.replace(pos, match[0].str().length(), replacement);
+        }
+
+        // Move search position
+        search_start = match.suffix().first;
+    }
+
+    return result;
+}
+
 void Executor::executeCommandInChild(const Command& cmd) {
     if (cmd.args.empty()) {
         exit(1);
     }
 
+    // Expand environment variables in arguments
+    std::vector<std::string> expanded_args = cmd.args;
+    for (auto& arg : expanded_args) {
+        arg = expandEnvironmentVariables(arg);
+    }
+
     // Find the executable
-    std::string executable = findExecutable(cmd.args[0]);
+    std::string executable = findExecutable(expanded_args[0]);
     if (executable.empty()) {
-        std::cerr << "Command not found: " << cmd.args[0] << "\n";
+        std::cerr << "Command not found: " << expanded_args[0] << "\n";
         exit(127); // Command not found exit code
     }
 
     // Update the command path
-    std::vector<std::string> exec_args = cmd.args;
+    std::vector<std::string> exec_args = expanded_args;
     exec_args[0] = executable;
 
     // Close extra file descriptors that might be from pipes

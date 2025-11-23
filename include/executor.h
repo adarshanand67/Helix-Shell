@@ -40,6 +40,9 @@ private:
     // Error handling
     void reportError(const std::string& message);
 
+    // Expand environment variables in strings
+    std::string expandEnvironmentVariables(const std::string& input);
+
     // Original file descriptors for restoration
     int original_stdin;
     int original_stdout;

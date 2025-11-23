@@ -15,8 +15,8 @@ NC := \033[0m # No Color
 CXX := g++
 CXXFLAGS := -std=c++23 -Wall -Wextra -pedantic -g -Werror -Iinclude/
 LDFLAGS := -lreadline
-TEST_CXXFLAGS := $(CXXFLAGS) -Itests/ -I/opt/homebrew/Cellar/cppunit/1.15.1/include
-TEST_LDFLAGS := -L/opt/homebrew/Cellar/cppunit/1.15.1/lib -lcppunit -lreadline
+TEST_CXXFLAGS := $(CXXFLAGS) -Itests/ `pkg-config --cflags cppunit`
+TEST_LDFLAGS := `pkg-config --libs cppunit` -lreadline
 
 # Directories
 SRC_DIR := src
@@ -42,9 +42,11 @@ all: build
 build: $(MAIN_EXE)
 	@echo "$(GREEN)✨ Build complete! Executable: $(MAIN_EXE)$(NC)"
 
-# Build and run tests
+# Build and run tests (using production-optimized build)
+test: CXXFLAGS := -std=c++23 -O3 -DNDEBUG -march=native -flto -Wall -Wextra -pedantic -Iinclude/
+test: LDFLAGS := `pkg-config --libs cppunit` -lreadline -flto
 test: $(TEST_EXE)
-	@echo "$(BLUE)🧪 Running 48 tests...$(NC)"
+	@echo "$(BLUE)🧪 Running 48 tests (production build)...$(NC)"
 	@if $(TEST_EXE) >/dev/null 2>&1; then \
 		echo "$(GREEN)✅ 48/48 tests passed!$(NC)"; \
 	else \
