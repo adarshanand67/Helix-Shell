@@ -1,5 +1,5 @@
-#include <iostream>
-#include <exception>
+#include <iostream> // Provides std::cout for test suite status output, std::cerr for exception messages, and std::cin implicitly via getline.
+#include <exception> // Provides std::exception base class for catching runtime test failures via catch (const std::exception& e).
 
 // Forward declarations for test functions
 void run_tokenizer_tests();

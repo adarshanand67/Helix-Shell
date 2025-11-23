@@ -1,12 +1,12 @@
 #ifndef HSHELL_SHELL_H
 #define HSHELL_SHELL_H
 
-#include "types.h"
-#include "tokenizer.h"
-#include "parser.h"
-#include "executor.h"
-#include <string>
-#include <vector>
+#include "types.h" // Includes type definitions: ParsedCommand, TokenType, Job, JobStatus structs, Command structures for shell operations.
+#include "tokenizer.h" // Includes Tokenizer class for tokenizing input strings into tokens.
+#include "parser.h" // Includes Parser class for converting token sequences into ParsedCommand structures.
+#include "executor.h" // Includes Executor class for executing parsed commands and pipelines.
+#include <string> // Provides std::string for directory paths, prompts, and command history storage.
+#include <vector> // Provides std::vector for storing command history and future collections.
 
 namespace hshell {
 

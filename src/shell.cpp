@@ -1,13 +1,13 @@
-#include "shell.h"
-#include "tokenizer.h"
-#include "parser.h"
-#include <iostream>
-#include <iomanip>
-#include <unistd.h>
-#include <pwd.h>
-#include <cstring>
-#include <cstdlib>
-#include <sys/stat.h>
+#include "shell.h" // Includes the Shell class definition, providing run() method for the main REPL loop, prompt display, input reading, and built-in command handling.
+#include "tokenizer.h" // Includes the Tokenizer class header, providing tokenize() method to split input strings into tokens (words, pipes, redirections, etc.).
+#include "parser.h" // Includes the Parser class header, providing parse() method to convert token sequences into ParsedCommand structures with pipelines and redirections.
+#include <iostream> // Provides standard I/O streams: std::cout for displaying prompt, history, and debug output; std::cin for reading user input - essential for REPL interaction.
+#include <iomanip> // Provides stream manipulators: std::setw, std::setfill for formatted output, specifically used in history command display.
+#include <unistd.h> // Provides Unix system calls: getuid, getcwd, chdir for user and directory management; gethostname for system hostname retrieval - used in prompt building and cd command.
+#include <pwd.h> // Provides password database functions: getpwuid for accessing user information struct - used to determine username and home directory.
+#include <cstring> // Provides C-style string functions: strerror for converting errno to readable strings - used in error messages for cd command failures.
+#include <cstdlib> // Provides general utilities: getenv, setenv for environment variable access and setting (USER, LOGNAME, OLDPWD, PWD) - crucial for prompt and cd functionality.
+#include <sys/stat.h> // Provides file status functions: (currently unused directly, but included for potential file operations or directory checks).
 
 namespace hshell {
 

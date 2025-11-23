@@ -1,11 +1,11 @@
-#include "executor.h"
-#include <iostream>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <cstring>
-#include <sys/stat.h>
-#include <cstdlib>
+#include "executor.h" // Includes the Executor class definition, providing methods for command execution, redirection setup, and error handling.
+#include <iostream> // Provides standard I/O streams: std::cerr for error output - used for reporting execution failures and debug messages.
+#include <unistd.h> // Provides Unix system calls: dup, dup2 for file descriptor duplication during redirection; fork for creating child processes; execvp for executing programs; close for managing file descriptors - core for pipeline and process management.
+#include <sys/wait.h> // Provides process waiting and status functions: waitpid, WIFEXITED, WEXITSTATUS, WIFSIGNALED, WTERMSIG - used for waiting on child processes and interpreting their exit statuses in pipelines.
+#include <fcntl.h> // Provides file control definitions: O_RDONLY, O_WRONLY, O_CREAT, O_TRUNC, O_APPEND - flags used for opening input/output/error files during redirection setup.
+#include <cstring> // Provides C-style string functions: strerror for converting errno codes to readable error messages - used in file operation error reporting.
+#include <sys/stat.h> // Provides file status functions: stat for retrieving file information, S_ISREG and S_IXUSR for checking if a file is a regular executable - used in PATH searching.
+#include <cstdlib> // Provides general utilities: getenv for accessing environment variables like PATH - essential for searching for executable commands.
 
 namespace hshell {
 

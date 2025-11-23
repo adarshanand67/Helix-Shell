@@ -1,5 +1,5 @@
-#include "tokenizer.h"
-#include <iostream>
+#include "tokenizer.h" // Includes the Tokenizer class definition, providing tokenize() method to break input strings into tokens using a state machine (normal, double quote, single quote).
+#include <iostream> // Provides standard I/O streams (currently unused in this file, but included for potential debug output or future development).
 
 namespace hshell {
 

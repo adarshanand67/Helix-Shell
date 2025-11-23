@@ -1,9 +1,9 @@
 #ifndef HSHELL_PARSER_H
 #define HSHELL_PARSER_H
 
-#include "types.h"
-#include <vector>
-#include <string>
+#include "types.h" // Includes type definitions: Token, TokenType, ParsedCommand, Command structs, and Pipeline structures used in parsing.
+#include <vector> // Provides std::vector for storing sequences of parsed commands, tokens, and command arguments.
+#include <string> // Provides std::string for storing token values, filenames in redirections, and command arguments.
 
 namespace hshell {
 

@@ -1,10 +1,10 @@
 #ifndef HSHELL_EXECUTOR_H
 #define HSHELL_EXECUTOR_H
 
-#include "types.h"
-#include <string>
-#include <vector>
-#include <optional>
+#include "types.h" // Includes project-wide type definitions for ParsedCommand, Command, Pipeline structures, and Token enums used in command execution.
+#include <string> // Provides std::string for executable paths, command arguments, and error messages.
+#include <vector> // Provides std::vector for storing command arguments and pipeline commands.
+#include <optional> // Provides std::optional for potential future use in optional execution parameters.
 
 namespace hshell {
 

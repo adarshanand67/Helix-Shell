@@ -1,7 +1,7 @@
-#include "../include/tokenizer.h"
-#include "../include/types.h"
-#include <iostream>
-#include <cassert>
+#include "../include/tokenizer.h" // Includes the Tokenizer class and its tokenize() method for testing various tokenization scenarios.
+#include "../include/types.h" // Includes Token, TokenType, and other type definitions needed for creating test tokens and checking types.
+#include <iostream> // Provides std::cout for displaying test progress and completion messages.
+#include <cassert> // Provides assert() macro for verifying tokenization results in unit tests.
 
 // Simple test functions for basic functionality testing
 using namespace hshell;

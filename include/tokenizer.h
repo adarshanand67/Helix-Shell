@@ -1,9 +1,9 @@
 #ifndef HSHELL_TOKENIZER_H
 #define HSHELL_TOKENIZER_H
 
-#include "types.h"
-#include <vector>
-#include <string>
+#include "types.h" // Includes type definitions: Token, TokenType enum for token classification and tokenizer states.
+#include <vector> // Provides std::vector for storing the sequence of parsed tokens.
+#include <string> // Provides std::string for storing token values and manipulating substrings during tokenization.
 
 namespace hshell {
 
