@@ -17,6 +17,7 @@ set(SOURCES
     src/shell.cpp
     src/tokenizer.cpp
     src/parser.cpp
+    src/executor.cpp
 )
 
 # Create executable

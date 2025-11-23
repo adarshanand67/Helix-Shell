@@ -130,38 +130,44 @@ bool Shell::processInput(const std::string& input) {
     }
     std::cout << "\n";
 
-    // Parse the tokens into structured command
-    ParsedCommand parsed_cmd = parser.parse(tokens);
-
-    // Debug: print the parsed command
-    std::cout << "Parsed command:\n";
-    std::cout << "  Background: " << (parsed_cmd.background ? "true" : "false") << "\n";
-    std::cout << "  Pipeline commands: " << parsed_cmd.pipeline.commands.size() << "\n";
-    for (size_t i = 0; i < parsed_cmd.pipeline.commands.size(); ++i) {
-        const auto& cmd = parsed_cmd.pipeline.commands[i];
-        std::cout << "    Command " << i << ":\n";
-        std::cout << "      Args: ";
-        for (const auto& arg : cmd.args) {
-            std::cout << "'" << arg << "' ";
-        }
-        std::cout << "\n";
-        if (!cmd.input_file.empty()) {
-            std::cout << "      Input: '" << cmd.input_file << "'\n";
-        }
-        if (!cmd.output_file.empty()) {
-            std::cout << "      Output: '" << cmd.output_file << "' (append: " << cmd.append_mode << ")\n";
-        }
-        if (!cmd.error_file.empty()) {
-            std::cout << "      Error: '" << cmd.error_file << "' (append: " << cmd.error_append_mode << ")\n";
-        }
-    }
-    std::cout << "\n";
-
-    // Handle basic commands
+    // Check for shell built-ins that need special handling
     if (trimmed == "exit") {
         running = false;
         return false;
     }
+
+    // Parse the tokens into structured command
+    ParsedCommand parsed_cmd = parser.parse(tokens);
+
+    // Handle built-in commands at shell level
+    if (!parsed_cmd.pipeline.commands.empty() && !parsed_cmd.pipeline.commands[0].args.empty()) {
+        const std::string& command = parsed_cmd.pipeline.commands[0].args[0];
+
+        if (command == "cd") {
+            // Handle cd command
+            std::string new_dir = ".";
+            if (parsed_cmd.pipeline.commands[0].args.size() > 1) {
+                new_dir = parsed_cmd.pipeline.commands[0].args[1];
+            }
+
+            if (chdir(new_dir.c_str()) == -1) {
+                std::cerr << "cd: " << strerror(errno) << ": " << new_dir << "\n";
+            } else {
+                // Update current directory
+                char cwd[1024];
+                if (getcwd(cwd, sizeof(cwd))) {
+                    current_directory = cwd;
+                }
+            }
+            return true;
+        }
+    }
+
+    // Execute the command using the executor
+    int exit_status = executor.execute(parsed_cmd);
+
+    // For debugging, show exit status
+    std::cout << "Command exited with status: " << exit_status << "\n";
 
     // Future: Execute commands here
 

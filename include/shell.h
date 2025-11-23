@@ -4,6 +4,7 @@
 #include "types.h"
 #include "tokenizer.h"
 #include "parser.h"
+#include "executor.h"
 #include <string>
 #include <vector>
 
@@ -33,6 +34,7 @@ private:
     // Parser for commands
     Tokenizer tokenizer;
     Parser parser;
+    Executor executor;
 
     // Shell environment
     std::map<std::string, std::string> environment;
