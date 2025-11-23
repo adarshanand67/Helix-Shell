@@ -28,6 +28,15 @@ private:
     std::string readInput();
     bool processInput(const std::string& input);
 
+    // Prompt enhancement
+    std::string getGitBranch() const;
+    std::string getColoredPrompt();
+
+    // Autocompletion
+    std::vector<std::string> getCommandCompletions(const std::string& partial) const;
+    std::vector<std::string> getPathCompletions(const std::string& partial) const;
+    std::string handleTabCompletion(const std::string& currentInput, size_t cursorPos);
+
     // State
     std::string current_directory;
     std::string home_directory;
