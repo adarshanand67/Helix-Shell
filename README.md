@@ -8,21 +8,133 @@
 ### Target Platform: Unix-like Systems (Linux, macOS)
 ### Language: C++ (C++23 Standard)
 
-## System Components Diagram
+## UML Class Diagram
 
 ```mermaid
-graph TD
-    A[main.cpp] --> B[Shell Class]
-    B --> C[Tokenizer.tokenize()]
-    C --> D[Parser.parse()]
-    D --> E[Executor.execute()]
-    E --> F{Command Type?}
-    F -->|External| G[fork()]
-    G --> H[Child: execvp]
-    G --> I[Parent: waitpid]
-    F -->|Built-in| J[Shell.<builtin>]
-    I --> K[Shell.run] --> C
-    J --> K
+classDiagram
+
+class Token {
+    +TokenType type
+    +std::string value
+}
+
+class Command {
+    +std::vector<std::string> args
+    +std::string input_file
+    +bool append_mode
+    +std::string output_file
+    +std::string error_file
+    +bool error_append_mode
+    +bool background
+}
+
+class Job {
+    +int job_id
+    +pid_t pgid
+    +std::string command
+    +JobStatus status
+}
+
+class CommandPipeline {
+    +std::vector<Command> commands
+    +std::string original_command
+}
+
+class ParsedCommand {
+    +CommandPipeline pipeline
+    +bool background
+}
+
+class Tokenizer {
+    +tokenize(const std::string&) std::vector<Token>
+    -processNormalState(...)
+    -processDoubleQuoteState(...)
+    -processSingleQuoteState(...)
+    -handleSpecialTokens(...)
+    -getTokenLength(...)
+}
+
+class Parser {
+    +parse(const std::vector<Token>&) ParsedCommand
+    -parseSingleCommand(...) Command
+    -parseArguments(...)
+    -parseRedirections(...)
+    -extractFilename(...) std::string
+}
+
+class Executor {
+    +Executor()
+    +~Executor()
+    +execute(const ParsedCommand&) int
+    -executeSingleCommand(...) int
+    -setupRedirections(...) bool
+    -restoreFileDescriptors(...)
+    -findExecutable(...) std::string
+    -buildArgv(...) std::vector<char*>
+    -reportError(...)
+    -int original_stdin
+    -int original_stdout
+    -int original_stderr
+}
+
+class Shell {
+    +Shell()
+    +~Shell()
+    +run() int
+    -showPrompt()
+    -readInput() std::string
+    -processInput(...) bool
+    -printJobs()
+    -bringToForeground(int)
+    -resumeInBackground(int)
+    -std::string current_directory
+    -std::string home_directory
+    -std::string prompt_format
+    -bool running
+    -int last_exit_status
+    -Tokenizer tokenizer
+    -Parser parser
+    -Executor executor
+    -std::map<std::string, std::string> environment
+    -std::vector<std::string> command_history
+    -std::map<int, Job> jobs
+}
+
+class JobStatus {
+    <<enumeration>>
+    RUNNING
+    STOPPED
+    DONE
+    TERMINATED
+}
+
+class TokenType {
+    <<enumeration>>
+    WORD
+    PIPE
+    REDIRECT_IN
+    REDIRECT_OUT
+    REDIRECT_OUT_APPEND
+    REDIRECT_ERR
+    REDIRECT_ERR_APPEND
+    BACKGROUND
+    SEMICOLON
+    END_OF_INPUT
+}
+
+Tokenizer ..> Token : creates
+Parser ..> ParsedCommand : creates
+Parser ..> Command : creates
+Parser ..> CommandPipeline : creates
+Shell --> Tokenizer : uses
+Shell --> Parser : uses
+Shell --> Executor : uses
+Shell --> Job : manages
+Executor ..> Command : executes
+ParsedCommand --> CommandPipeline : contains
+CommandPipeline --> Command : contains
+Job --> JobStatus : has
+Token --> TokenType : has
 ```
 
 ## 1. Executive Summary
@@ -129,12 +241,12 @@ These commands modify the shell's internal state and must be executed within the
 - Status: Exit with the provided numeric code or the status of the last executed command.
 
 **history:**
-- Display the session's command history with line numbers.
-- Limit the history to a reasonable size (e.g., 1000 entries) to manage memory.
-
-**jobs:**
-- List all active jobs tracked by the JobManager.
-- Format: `[Job ID] Status Command`.
+Shell --> Job : manages
+Executor ..> Command : executes
+ParsedCommand --> CommandPipeline : contains
+CommandPipeline --> Command : contains
+Job --> JobStatus : has
+Token --> TokenType : has
 
 **fg [job_id]:**
 - Bring a background/stopped job to the foreground.

@@ -31,6 +31,3 @@ add_executable(hsh_tests ${TEST_SOURCES})
 
 # Link against CppUnit
 target_link_libraries(hsh_tests ${CPPUNIT_LIBRARIES})
-
-# Debug executable
-add_executable(debug_parser debug_parser.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../src/tokenizer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../src/parser.cpp)
