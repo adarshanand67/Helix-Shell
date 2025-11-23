@@ -15,26 +15,34 @@
 
 namespace helix {
 
-Shell::Shell() : running(true) {
+Shell::Shell()
+    : builtin_dispatcher(std::make_unique<BuiltinCommandDispatcher>()),
+      job_manager(std::make_unique<JobManager>()) {
+
+    // Initialize state
+    state.running = true;
+    state.job_manager = job_manager.get();
+    state.prompt = &prompt;
+
     // Initialize readline for advanced autocompletion
     ReadlineSupport::initialize();
 
     // Initialize environment
     char* home = getenv("HOME");
     if (home) {
-        home_directory = home;
+        state.home_directory = home;
     } else {
         // Fallback to getpwuid
         struct passwd* pw = getpwuid(getuid());
         if (pw) {
-            home_directory = pw->pw_dir;
+            state.home_directory = pw->pw_dir;
         }
     }
 
     // Set current directory
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd))) {
-        current_directory = cwd;
+        state.current_directory = cwd;
     }
 
     // Set up prompt with user and host info
@@ -53,9 +61,9 @@ Shell::Shell() : running(true) {
         prompt.setUserHost(user ? user : "user", "helix");
     }
 
-    prompt.setHomeDirectory(home_directory);
-    prompt.setCurrentDirectory(current_directory);
-    prompt.setLastExitStatus(last_exit_status);
+    prompt.setHomeDirectory(state.home_directory);
+    prompt.setCurrentDirectory(state.current_directory);
+    prompt.setLastExitStatus(state.last_exit_status);
 }
 
 Shell::~Shell() {
@@ -66,7 +74,7 @@ Shell::~Shell() {
 int Shell::run() {
     std::cout << "Helix Shell (helix) v2.0 - Type 'exit' to quit\n";
 
-    while (running) {
+    while (state.running) {
         showPrompt();
 
         std::string input = readInput();
@@ -78,17 +86,16 @@ int Shell::run() {
 
     std::cout << "Goodbye!\n";
 
-    return last_exit_status;
+    return state.last_exit_status;
 }
 
 void Shell::showPrompt() {
     // Update the prompt with current state
-    prompt.setCurrentDirectory(current_directory);
-    prompt.setLastExitStatus(last_exit_status);
+    prompt.setCurrentDirectory(state.current_directory);
+    prompt.setLastExitStatus(state.last_exit_status);
 
     // Generate and display the prompt
     std::cout << prompt.generate();
-
     std::cout.flush(); // Ensure prompt is displayed immediately
 }
 
@@ -98,7 +105,7 @@ std::string Shell::readInput() {
 
     if (line.empty() && std::cin.eof()) {
         // EOF (Ctrl+D) detected
-        running = false;
+        state.running = false;
         return "exit";
     }
 
@@ -111,8 +118,8 @@ bool Shell::processInput(const std::string& input) {
         return true;
     }
 
-    // Add to history (basic implementation for now)
-    command_history.push_back(input);
+    // Add to history
+    state.command_history.push_back(input);
 
     // Basic command processing
     std::string trimmed = input;
@@ -125,140 +132,27 @@ bool Shell::processInput(const std::string& input) {
     // Tokenize and parse the command
     auto tokens = tokenizer.tokenize(trimmed);
 
-
-
     // Parse the tokens into structured command
     ParsedCommand parsed_cmd = parser.parse(tokens);
 
-    // Handle built-in commands at shell level
-    if (!parsed_cmd.pipeline.commands.empty() && !parsed_cmd.pipeline.commands[0].args.empty()) {
-        const std::string& command = parsed_cmd.pipeline.commands[0].args[0];
+    // Try to handle as builtin command first
+    bool handled = builtin_dispatcher->dispatch(parsed_cmd, state);
 
-        if (command == "cd") {
-            // Handle cd command
-            std::string new_dir;
-            if (parsed_cmd.pipeline.commands[0].args.size() > 1) {
-                new_dir = parsed_cmd.pipeline.commands[0].args[1];
+    // Check if it was the exit command (regardless of handler return value)
+    if (!state.running) {
+        return false;
+    }
 
-                // Handle cd -
-                if (new_dir == "-") {
-                    char* oldpwd = getenv("OLDPWD");
-                    if (oldpwd) {
-                        new_dir = oldpwd;
-                    } else {
-                        std::cerr << "cd: OLDPWD not set\n";
-                        return true;
-                    }
-                }
-            } else {
-                // Default to home directory
-                new_dir = home_directory;
-            }
-
-            // Store the old directory
-            std::string old_cwd = current_directory;
-
-            if (chdir(new_dir.c_str()) == -1) {
-                std::cerr << "cd: " << strerror(errno) << ": " << new_dir << "\n";
-            } else {
-                // Update current directory
-                char cwd[1024];
-                if (getcwd(cwd, sizeof(cwd))) {
-                    current_directory = cwd;
-                }
-
-                // Update environment variables
-                setenv("OLDPWD", old_cwd.c_str(), 1);
-                setenv("PWD", current_directory.c_str(), 1);
-
-                // For cd -, print the directory we changed to
-                if (parsed_cmd.pipeline.commands[0].args.size() > 1 && parsed_cmd.pipeline.commands[0].args[1] == "-") {
-                    std::cout << current_directory << "\n";
-                }
-            }
-            return true;
-        } else if (command == "history") {
-            // Handle history command
-            for (size_t i = 0; i < command_history.size(); ++i) {
-                std::cout << std::setw(4) << std::setfill(' ') << (i + 1) << "  " << command_history[i] << "\n";
-            }
-            return true;
-        } else if (command == "jobs") {
-            // Handle jobs command
-            printJobs();
-            return true;
-        } else if (command == "fg") {
-            // Handle fg command
-            if (parsed_cmd.pipeline.commands[0].args.size() < 2) {
-                std::cerr << "fg: job specification missing\n";
-                return true;
-            }
-            int job_id = std::stoi(parsed_cmd.pipeline.commands[0].args[1]);
-            bringToForeground(job_id);
-            return true;
-        } else if (command == "bg") {
-            // Handle bg command
-            if (parsed_cmd.pipeline.commands[0].args.size() < 2) {
-                std::cerr << "bg: job specification missing\n";
-                return true;
-            }
-            int job_id = std::stoi(parsed_cmd.pipeline.commands[0].args[1]);
-            resumeInBackground(job_id);
-            return true;
-        } else if (command == "exit") {
-            // Handle exit command
-            last_exit_status = 0;
-            if (parsed_cmd.pipeline.commands[0].args.size() > 1) {
-                try {
-                    last_exit_status = std::stoi(parsed_cmd.pipeline.commands[0].args[1]);
-                } catch (const std::exception&) {
-                    std::cerr << "exit: numeric argument required\n";
-                    return true;
-                }
-            }
-            running = false;
-            return false;
-        }
+    // If handled as builtin, we're done
+    if (handled) {
+        return true;
     }
 
     // Execute the command using the executor
-    last_exit_status = executor.execute(parsed_cmd);
+    state.last_exit_status = executor.execute(parsed_cmd);
 
     return true;
 }
-
-void Shell::printJobs() {
-    for (const auto& pair : jobs) {
-        const Job& job = pair.second;
-        std::string status_str = "Running";
-        if (job.status == JobStatus::STOPPED) status_str = "Stopped";
-        else if (job.status == JobStatus::DONE) status_str = "Done";
-        else if (job.status == JobStatus::TERMINATED) status_str = "Terminated";
-        std::cout << "[" << job.job_id << "] " << status_str << " " << job.command << "\n";
-    }
-}
-
-void Shell::bringToForeground(int job_id) {
-    auto it = jobs.find(job_id);
-    if (it == jobs.end()) {
-        std::cerr << "fg: job " << job_id << " not found\n";
-        return;
-    }
-    // Placeholder for now - full implementation needs tcsetpgrp and SIGCONT
-    std::cout << "Bringing job " << job_id << " to foreground\n";
-}
-
-void Shell::resumeInBackground(int job_id) {
-    auto it = jobs.find(job_id);
-    if (it == jobs.end()) {
-        std::cerr << "bg: job " << job_id << " not found\n";
-        return;
-    }
-    // Placeholder for now - full implementation needs SIGCONT
-    std::cout << "Resuming job " << job_id << " in background\n";
-}
-
-
 
 // Get command completions from PATH
 std::vector<std::string> Shell::getCommandCompletions(const std::string& partial) const {
@@ -325,13 +219,13 @@ std::vector<std::string> Shell::getPathCompletions(const std::string& partial) c
 
         // Handle absolute paths
         if (dir_path[0] != '/') {
-            dir_path = current_directory + "/" + dir_path;
+            dir_path = state.current_directory + "/" + dir_path;
         }
     }
 
     // Handle ~ expansion
     if (!prefix.empty() && prefix[0] == '~') {
-        dir_path = home_directory;
+        dir_path = state.home_directory;
         prefix = prefix.substr(1);
     }
 

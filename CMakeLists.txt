@@ -61,6 +61,14 @@ set(CORE_SOURCES
     src/executor.cpp
     src/readline_support.cpp
     src/prompt.cpp
+    # Executor components (composition)
+    src/executor/executable_resolver.cpp
+    src/executor/environment_expander.cpp
+    src/executor/fd_manager.cpp
+    src/executor/pipeline_manager.cpp
+    # Shell components (composition)
+    src/shell/builtin_handler.cpp
+    src/shell/job_manager.cpp
 )
 
 # All source files including main.cpp

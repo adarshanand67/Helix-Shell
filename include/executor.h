@@ -1,20 +1,29 @@
 #ifndef HELIX_EXECUTOR_H
 #define HELIX_EXECUTOR_H
 
-#include "types.h" // Includes project-wide type definitions for ParsedCommand, Command, Pipeline structures, and Token enums used in command execution.
-#include <string> // Provides std::string for executable paths, command arguments, and error messages.
-#include <vector> // Provides std::vector for storing command arguments and pipeline commands.
-#include <optional> // Provides std::optional for potential future use in optional execution parameters.
+#include "types.h"
+#include "executor/executable_resolver.h"
+#include "executor/environment_expander.h"
+#include "executor/fd_manager.h"
+#include "executor/pipeline_manager.h"
+#include <string>
+#include <vector>
+#include <memory>
 
 namespace helix {
 
-// Command Executor - handles execution of parsed commands
+// Command Executor - handles execution of parsed commands using composition
+// Delegates specialized tasks to focused components:
+// - ExecutableResolver for PATH searching
+// - EnvironmentVariableExpander for variable substitution
+// - FileDescriptorManager for FD redirections
+// - PipelineManager for multi-command pipelines
 class Executor {
 public:
     Executor();
     ~Executor();
 
-    // Execute a parsed command (pipeline)
+    // Execute a parsed command (pipeline or single command)
     // Returns exit status or error information
     int execute(const ParsedCommand& cmd);
 
@@ -25,28 +34,17 @@ private:
     // Execute command directly in child process (no fork, for pipelines)
     void executeCommandInChild(const Command& cmd);
 
-    // Handle redirections for a command
-    bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd);
-
-    // Restore file descriptors after redirection
-    void restoreFileDescriptors(int original_stdin, int original_stdout, int original_stderr);
-
-    // Find executable in PATH
-    std::string findExecutable(const std::string& command);
-
     // Convert command args to C-style array for exec
     std::vector<char*> buildArgv(const std::vector<std::string>& args);
 
     // Error handling
     void reportError(const std::string& message);
 
-    // Expand environment variables in strings
-    std::string expandEnvironmentVariables(const std::string& input);
-
-    // Original file descriptors for restoration
-    int original_stdin;
-    int original_stdout;
-    int original_stderr;
+    // Component instances (composition)
+    std::unique_ptr<ExecutableResolver> exe_resolver;
+    std::unique_ptr<EnvironmentVariableExpander> env_expander;
+    std::unique_ptr<FileDescriptorManager> fd_manager;
+    std::unique_ptr<PipelineManager> pipeline_manager;
 };
 
 } // namespace helix
