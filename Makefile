@@ -1,6 +1,6 @@
 # HelixShell Makefile
 
-.PHONY: all build test run clean help
+.PHONY: all build test run clean help docker-build-all docker-run
 
 # Colors for pretty output
 RED := \033[0;31m
@@ -54,8 +54,8 @@ test: $(TEST_EXE)
 		exit 1; \
 	fi
 
-# Run the shell executable
-run: $(MAIN_EXE)
+# Run the shell executable and build Docker image
+run: $(MAIN_EXE) docker-build-all
 	@echo "$(CYAN)🚀 Starting HelixShell...$(NC)"
 	./$(MAIN_EXE)
 
@@ -68,12 +68,36 @@ clean:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  all    - Build the project (default)"
-	@echo "  build  - Build the main executable"
-	@echo "  test   - Build and run tests"
-	@echo "  run    - Build and run the shell application"
-	@echo "  clean  - Remove build directory"
-	@echo "  help   - Show this help message"
+	@echo "  all               - Build the project (default)"
+	@echo "  build             - Build the main executable"
+	@echo "  test              - Build and run tests"
+	@echo "  run               - Build for all platforms including Docker and run locally"
+	@echo "  docker-build-all  - Build Docker image for all platforms (amd64, arm64)"
+	@echo "  docker-run        - Run HelixShell in Docker container"
+	@echo "  clean             - Remove build directory"
+	@echo "  help              - Show this help message"
+
+# Docker targets
+docker-build-all:
+	@echo "$(BLUE)🐳 Building Docker image for all platforms (linux/amd64, linux/arm64)...$(NC)"
+	@if command -v docker >/dev/null 2>&1; then \
+		docker buildx build --platform linux/amd64,linux/arm64 -t helixshell:latest .; \
+		echo "$(GREEN)✅ Docker image built successfully for all platforms!$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  Docker not found. Skipping Docker build.$(NC)"; \
+	fi
+
+docker-run:
+	@echo "$(CYAN)🐳 Starting HelixShell in Docker container...$(NC)"
+	@if command -v docker >/dev/null 2>&1; then \
+		docker run -it --rm \
+			--name helix-shell \
+			-v $$(pwd)/workspace:/home/shelluser/workspace \
+			helixshell:latest; \
+	else \
+		echo "$(RED)❌ Docker not installed or not running$(NC)"; \
+		exit 1; \
+	fi
 
 # Create build directory
 create_build_dir:
