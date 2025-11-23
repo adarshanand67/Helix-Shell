@@ -42,10 +42,10 @@ docker run -it --rm helixshell
 git clone https://github.com/adarshanand67/Helix-Shell.git
 cd Helix-Shell
 ./scripts/setup.sh      # Install dependencies
-make build      # Build the shell
-./build/helix   # Run it
-```
-
+mkdir build && cd build
+cmake ..
+make                   # Build the shell
+./helix                # Run it
 ### Features
 
 - **TAB Autocompletion**: Complete commands and file paths with TAB
@@ -304,9 +304,7 @@ Token --> TokenType : has
 - Resume a stopped job in the background.
 - Send `SIGCONT` to the process group.
 
-**export [VAR=VALUE]:**
-- Set environment variables using `setenv()` or `putenv()`.
-- If no value is given (e.g., `export VAR`), execute nothing or print the variable.
+
 
 ### 3.4. Advanced I/O & Piping
 
@@ -536,21 +534,27 @@ See [scripts/README.md](scripts/README.md) for details.
 ### Standard Build
 
 ```bash
-make build
+mkdir build && cd build
+cmake ..
+make
 ```
 
 ### Build with Tests
 
 ```bash
-make build
-make test
+mkdir build && cd build
+cmake ..
+make
+make tests
 ```
 
 ### Clean Build
 
 ```bash
-make clean
-make build
+rm -rf build
+mkdir build && cd build
+cmake ..
+make
 ```
 
 ## Running
@@ -565,14 +569,17 @@ make test
 
 ## Current Implementation Status
 
-- ✅ **Project Setup**: Makefile build system, modular architecture, Git hooks
-- ✅ **REPL Loop**: Interactive prompt with user@hostname:cwd format
+- ✅ **Project Setup**: CMake build system, modular architecture, Git hooks
+- ✅ **REPL Loop**: Interactive prompt with user@hostname:cwd format, Git integration, colored status indicators
+- ✅ **Tab Autocompletion**: Command and path completion using readline library
 - ✅ **Tokenizer**: State machine parsing with quotes, escapes, metacharacters
 - ✅ **Parser**: Converts tokens to structured Command objects
-- ✅ **Single Command Execution**: fork/exec/wait with PATH resolution
-- ✅ **Basic I/O Redirection**: `<`, `>`, `>>` support
-- ✅ **Pipeline Support**: `|` operator for command chaining
-- ✅ **Built-in Commands**: `cd`, `exit`, `history`, `jobs`, `fg`, `bg` (placeholders)
-- ✅ **Error Redirection**: `2>`, `2>>` operators
-- ⏳ **Job Control**: Process group management and signal handling
-- ❌ **Foreground/background full implementation**: Terminal control with `tcsetpgrp`, `SIGCONT`, `SIGTSTP`
+- ✅ **Single Command Execution**: fork/exec/wait with PATH resolution and environment variable expansion
+- ✅ **Full I/O Redirection**: `<`, `>`, `>>`, `2>`, `2>>` support
+- ✅ **Pipeline Support**: `|` operator for command chaining (multi-stage)
+- ✅ **Built-in Commands**: `cd` (with `-` support), `exit`, `history`, `jobs`
+- ✅ **Error Handling**: Proper error messages and exit codes
+- ❌ **Background Jobs**: `&` operator not implemented
+- ❌ **Job Control**: `fg`, `bg` commands are placeholders (SIGCHLD/signal handling not implemented)
+- ❌ **`export` built-in**: Environment variable setting not implemented
+- ❌ **`pwd` built-in**: Not implemented (though autocompletion includes it)
