@@ -14,12 +14,12 @@ A modern Unix shell with advanced features including autocompletion, colored pro
 #### Linux/macOS (Binary Installer) - Recommended
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
 ```
 
 Or download and run manually:
 ```bash
-wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
 ```
 
 Options:
