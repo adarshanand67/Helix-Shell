@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup C++ environment
+      run: |
+        echo "Setting up C++ environment..."
+
+    - name: Install CppUnit (macOS)
+      run: |
+        brew update
+        brew install cppunit
+
+        # Verify cppunit installation
+        cppunit-config --version
+        cppunit-config --cflags
+        cppunit-config --libs
+
+    - name: Build project
+      run: |
+        echo "Running project build..."
+        make build
+
+    - name: Run tests
+      run: |
+        echo "Running test suite..."
+        make test
+
+    - name: Verify compiled executable
+      run: |
+        echo "Verifying build output..."
+        ls -la build/
+        file build/hsh
+        file build/hsh_tests
+
+
+  # Optional: Add more CI jobs for different platforms
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies (Ubuntu)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libcppunit-dev
+
+    - name: Build project (Linux)
+      run: |
+        echo "Building on Ubuntu..."
+        make build
+
+    - name: Run tests (Linux)
+      run: |
+        echo "Testing on Ubuntu..."
+        make test
+
+
+  # Quality checks
+  code-quality:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install CppUnit
+      run: |
+        brew update
+        brew install cppunit
+
+    - name: Check code formatting (C++)
+      run: |
+        echo "Checking for basic code quality..."
+        # Check for tabs instead of spaces (common C++ style issue)
+        if find src/ include/ tests/ -name "*.cpp" -o -name "*.h" | xargs grep -l '	' >/dev/null 2>&1; then
+          echo "⚠️  Warning: Found tabs in code files. Consider using spaces for consistency."
+        else
+          echo "✅ No tabs found in source files"
+        fi
+
+        # Basic file existence and format checks
+        echo "Checking project structure..."
+        [ -f Makefile ] && echo "✅ Makefile present" || echo "❌ Makefile missing"
+        [ -f include/shell.h ] && echo "✅ Main header present" || echo "❌ Main header missing"
+        [ -d src/ ] && echo "✅ Source directory present" || echo "❌ Source directory missing"
+        [ -d tests/ ] && echo "✅ Tests directory present" || echo "❌ Tests directory missing"
+
+    - name: Build for quality check
+      run: make build
+
+    - name: Test quality metrics
+      run: |
+        echo "Running quality-focused tests..."
+        make test
+
+        # Additional quality checks
+        echo "Checking for common issues..."
+        # Check executable permissions
+        [ -x build/hsh ] && echo "✅ Executable has correct permissions" || echo "❌ Executable missing or incorrect permissions"
+
+        # Check build artifacts
+        if [ -f build/hsh ] && [ -f build/hsh_tests ]; then
+          echo "✅ All build artifacts present"
+        else
+          echo "❌ Missing build artifacts"
+          exit 1
+        fi

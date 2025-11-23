@@ -19,6 +19,9 @@ public:
     // Main REPL loop - runs until exit
     int run();
 
+    // Public version for testing
+    bool processInputString(const std::string& input) { return processInput(input); }
+
 private:
     // Core REPL components
     void showPrompt();
