@@ -5,6 +5,9 @@
 void run_tokenizer_tests();
 
 int main(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+
     std::cout << "Helix Shell (hsh) Test Suite\n";
     std::cout << "==========================\n\n";
 

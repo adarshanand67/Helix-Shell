@@ -26,9 +26,9 @@ private:
     // Main processing methods for each state
     size_t processNormalState(const std::string& input, size_t i, std::vector<Token>& tokens,
                              std::string& current, TokenizerState& state);
-    size_t processDoubleQuoteState(const std::string& input, size_t i, std::vector<Token>& tokens,
+    size_t processDoubleQuoteState(const std::string& input, size_t i,
                                   std::string& current, TokenizerState& state);
-    size_t processSingleQuoteState(const std::string& input, size_t i, std::vector<Token>& tokens,
+    size_t processSingleQuoteState(const std::string& input, size_t i,
                                   std::string& current, TokenizerState& state);
 
     // Helper methods for token handling

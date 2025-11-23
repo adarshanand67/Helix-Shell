@@ -17,7 +17,7 @@ public:
     ~Shell();
 
     // Main REPL loop - runs until exit
-    void run();
+    int run();
 
 private:
     // Core REPL components
@@ -30,6 +30,7 @@ private:
     std::string home_directory;
     std::string prompt_format;
     bool running;
+    int last_exit_status = 0;
 
     // Parser for commands
     Tokenizer tokenizer;
@@ -44,7 +45,11 @@ private:
 
     // Job management (will be implemented later)
     std::map<int, Job> jobs;
-    int next_job_id;
+
+    // Job control methods
+    void printJobs();
+    void bringToForeground(int job_id);
+    void resumeInBackground(int job_id);
 };
 
 } // namespace hshell

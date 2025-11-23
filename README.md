@@ -6,7 +6,7 @@
 ### Version: 2.0
 ### Status: Implementation in Progress
 ### Target Platform: Unix-like Systems (Linux, macOS)
-### Language: C++ (C++14/17 Standard)
+### Language: C++ (C++23 Standard)
 
 ## 1. Executive Summary
 
@@ -316,8 +316,7 @@ make
 - ✅ **Single Command Execution**: fork/exec/wait with PATH resolution
 - ✅ **Basic I/O Redirection**: `<`, `>`, `>>` support
 - ✅ **Pipeline Support**: `|` operator for command chaining
-- ⏳ **Built-in Commands**: `cd`, `exit` (partial)
-- ❌ **Job Control**: Background jobs (`&`), `jobs`, `fg`, `bg`
-- ❌ **Signal Handling**: Interrupt handling (`Ctrl+C`, `Ctrl+Z`)
-- ❌ **Command History**: `history` command
-- ❌ **Error Redirection**: `2>`, `2>>` operators
+- ✅ **Built-in Commands**: `cd`, `exit`, `history`, `jobs`, `fg`, `bg` (placeholders)
+- ✅ **Error Redirection**: `2>`, `2>>` operators
+- ⏳ **Job Control**: Process group management and signal handling
+- ❌ **Foreground/background full implementation**: Terminal control with `tcsetpgrp`, `SIGCONT`, `SIGTSTP`

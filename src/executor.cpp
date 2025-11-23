@@ -134,7 +134,6 @@ int Executor::execute(const ParsedCommand& cmd) {
     }
 
     // Wait for all commands in the pipeline to complete
-    int last_status = -1;
     int exit_status = -1;
     for (size_t i = 0; i < pids.size(); ++i) {
         int status;

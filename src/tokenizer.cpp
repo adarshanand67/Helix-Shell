@@ -14,17 +14,15 @@ std::vector<Token> Tokenizer::tokenize(const std::string& input) {
     size_t i = 0;
 
     while (i < input.length()) {
-        char c = input[i];
-
         switch (state) {
             case TokenizerState::NORMAL:
                 i += processNormalState(input, i, tokens, current, state);
                 break;
             case TokenizerState::IN_DOUBLE_QUOTE:
-                i += processDoubleQuoteState(input, i, tokens, current, state);
+                i += processDoubleQuoteState(input, i, current, state);
                 break;
             case TokenizerState::IN_SINGLE_QUOTE:
-                i += processSingleQuoteState(input, i, tokens, current, state);
+                i += processSingleQuoteState(input, i, current, state);
                 break;
         }
     }
@@ -95,7 +93,7 @@ size_t Tokenizer::processNormalState(const std::string& input, size_t i, std::ve
     return 1;
 }
 
-size_t Tokenizer::processDoubleQuoteState(const std::string& input, size_t i, std::vector<Token>& tokens,
+size_t Tokenizer::processDoubleQuoteState(const std::string& input, size_t i,
                                          std::string& current, TokenizerState& state) {
     char c = input[i];
 
@@ -116,7 +114,7 @@ size_t Tokenizer::processDoubleQuoteState(const std::string& input, size_t i, st
     return 1;
 }
 
-size_t Tokenizer::processSingleQuoteState(const std::string& input, size_t i, std::vector<Token>& tokens,
+size_t Tokenizer::processSingleQuoteState(const std::string& input, size_t i,
                                          std::string& current, TokenizerState& state) {
     if (input[i] == '\'') {
         state = TokenizerState::NORMAL;
