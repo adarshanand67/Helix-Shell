@@ -27,14 +27,14 @@ jobs:
         path: |
           ~/Library/Caches/Homebrew
           /usr/local/Cellar
-        key: ${{ runner.os }}-brew-${{ hashFiles('setup.sh') }}
+        key: ${{ runner.os }}-brew-v1
         restore-keys: |
           ${{ runner.os }}-brew-
 
     - name: Install dependencies
       run: |
         brew update
-        brew install cppunit pkg-config
+        brew install cppunit pkg-config readline
 
         # Verify installations
         echo "✅ CppUnit $(pkg-config --modversion cppunit)"
@@ -75,14 +75,14 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /var/cache/apt
-        key: ${{ runner.os }}-apt-${{ hashFiles('setup.sh') }}
+        key: ${{ runner.os }}-apt-v1
         restore-keys: |
           ${{ runner.os }}-apt-
 
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev
+        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev
 
     - name: Build project
       run: |
@@ -112,7 +112,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev gcov lcov
+        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev gcov lcov
 
     - name: Build with coverage instrumentation
       run: |
@@ -159,7 +159,7 @@ jobs:
         fi
 
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: coverage/html
@@ -226,7 +226,7 @@ jobs:
         echo "✅ Common issue checks passed"
 
     - name: Upload analysis report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: static-analysis-report
         path: cppcheck-report.txt
@@ -243,7 +243,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev valgrind
+        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev valgrind
 
     - name: Build for memory testing
       run: |
@@ -272,7 +272,7 @@ jobs:
 
     - name: Upload valgrind report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: valgrind-report
         path: valgrind-report.txt
@@ -372,7 +372,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev
+        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev
 
     - name: Build
       run: make build
