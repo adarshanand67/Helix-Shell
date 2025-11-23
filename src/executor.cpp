@@ -36,6 +36,9 @@ Executor::~Executor() = default;
 int Executor::execute(const ParsedCommand& cmd) {
     size_t num_commands = cmd.pipeline.commands.size();
 
+    // Reset background PID
+    last_background_pid = 0;
+
     // Handle empty command
     if (num_commands == 0) {
         return 0;
@@ -43,11 +46,7 @@ int Executor::execute(const ParsedCommand& cmd) {
 
     // Handle single command (no pipeline)
     if (num_commands == 1) {
-        if (cmd.background) {
-            reportError("Background execution (&) not yet implemented");
-            return -1;
-        }
-        return executeSingleCommand(cmd.pipeline.commands[0]);
+        return executeSingleCommand(cmd.pipeline.commands[0], -1, -1, cmd.background);
     }
 
     // Handle pipeline
@@ -72,7 +71,7 @@ int Executor::execute(const ParsedCommand& cmd) {
     return pipeline_manager->executePipeline(cmd, executor_func);
 }
 
-int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_fd) {
+int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_fd, bool background) {
     if (cmd.args.empty()) {
         reportError("No command to execute");
         return -1;
@@ -80,7 +79,9 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
 
     // Handle built-in commands (should be handled at shell level)
     if (cmd.args[0] == "cd" || cmd.args[0] == "jobs" ||
-        cmd.args[0] == "fg" || cmd.args[0] == "bg") {
+        cmd.args[0] == "fg" || cmd.args[0] == "bg" ||
+        cmd.args[0] == "pwd" || cmd.args[0] == "export" ||
+        cmd.args[0] == "exit" || cmd.args[0] == "history") {
         reportError("Built-in commands should be handled at shell level");
         return -1;
     }
@@ -124,22 +125,30 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
         if (input_fd > 2) close(input_fd);
         if (output_fd > 2) close(output_fd);
 
-        // Wait for child process completion
-        int status;
-        if (waitpid(pid, &status, 0) == -1) {
-            reportError("Wait failed");
+        // Handle background vs foreground execution
+        if (background) {
+            // For background jobs, don't wait - just save the PID
+            last_background_pid = pid;
+            std::cout << "[Background job started with PID " << pid << "]\n";
+            return 0;
+        } else {
+            // Wait for child process completion (foreground)
+            int status;
+            if (waitpid(pid, &status, 0) == -1) {
+                reportError("Wait failed");
+                return -1;
+            }
+
+            // Return exit status
+            if (WIFEXITED(status)) {
+                return WEXITSTATUS(status);
+            } else if (WIFSIGNALED(status)) {
+                std::cerr << "Command terminated by signal " << WTERMSIG(status) << "\n";
+                return 128 + WTERMSIG(status);
+            }
+
             return -1;
         }
-
-        // Return exit status
-        if (WIFEXITED(status)) {
-            return WEXITSTATUS(status);
-        } else if (WIFSIGNALED(status)) {
-            std::cerr << "Command terminated by signal " << WTERMSIG(status) << "\n";
-            return 128 + WTERMSIG(status);
-        }
-
-        return -1;
     }
 }
 

@@ -864,9 +864,9 @@ make test
 - ✅ **Single Command Execution**: fork/exec/wait with PATH resolution and environment variable expansion
 - ✅ **Full I/O Redirection**: `<`, `>`, `>>`, `2>`, `2>>` support
 - ✅ **Pipeline Support**: `|` operator for command chaining (multi-stage)
-- ✅ **Built-in Commands**: `cd` (with `-` support), `exit`, `history`, `jobs`
+- ✅ **Built-in Commands**: `cd` (with `-` support), `exit`, `history`, `jobs`, `pwd`, `export`
 - ✅ **Error Handling**: Proper error messages and exit codes
-- ❌ **Background Jobs**: `&` operator not implemented
-- ❌ **Job Control**: `fg`, `bg` commands are placeholders (SIGCHLD/signal handling not implemented)
-- ❌ **`export` built-in**: Environment variable setting not implemented
-- ❌ **`pwd` built-in**: Not implemented (though autocompletion includes it)
+- ✅ **Background Jobs**: `&` operator implemented - processes run in background without blocking shell
+- ✅ **`pwd` built-in**: Print working directory
+- ✅ **`export` built-in**: Set environment variables for child processes
+- ⚠️  **Job Control**: `fg`, `bg` commands are placeholders (SIGCHLD/signal handling not yet implemented)

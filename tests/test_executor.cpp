@@ -38,7 +38,7 @@ class TestExecutor : public CppUnit::TestFixture {
   // These are tested by command execution success/failure
 
   // Error conditions
-  CPPUNIT_TEST(testBackgroundExecutionNotSupported);
+  CPPUNIT_TEST(testBackgroundExecution);
   CPPUNIT_TEST(testSetupRedirectionsFailedInput);
   CPPUNIT_TEST(testSetupRedirectionsFailedOutput);
 
@@ -257,9 +257,20 @@ public:
 
 
 
-  void testBackgroundExecutionNotSupported() {
-    // Test that background execution returns error
-    assertCommandExitCode("echo background &", -1);
+  void testBackgroundExecution() {
+    // Test that background execution works properly
+    helix::ParsedCommand cmd;
+    cmd.background = true;
+    helix::Command c;
+    c.args = {"sleep", "1"};
+    cmd.pipeline.commands.push_back(c);
+
+    int result = executor->execute(cmd);
+    CPPUNIT_ASSERT_EQUAL(0, result); // Should return 0 for background jobs
+
+    // Verify that a background PID was set
+    pid_t bg_pid = executor->getLastBackgroundPid();
+    CPPUNIT_ASSERT(bg_pid > 0); // Should have a valid PID
   }
 
   void testSetupRedirectionsFailedInput() {

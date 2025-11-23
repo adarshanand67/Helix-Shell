@@ -151,6 +151,12 @@ bool Shell::processInput(const std::string& input) {
     // Execute the command using the executor
     state.last_exit_status = executor.execute(parsed_cmd);
 
+    // If this was a background job, register it with the job manager
+    pid_t bg_pid = executor.getLastBackgroundPid();
+    if (bg_pid > 0 && job_manager) {
+        job_manager->addJob(bg_pid, input);
+    }
+
     return true;
 }
 

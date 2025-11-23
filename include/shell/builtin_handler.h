@@ -70,6 +70,20 @@ public:
     bool canHandle(const std::string& command) const override;
 };
 
+// PwdCommandHandler - Handles 'pwd' command
+class PwdCommandHandler : public BuiltinCommandHandler {
+public:
+    bool handle(const ParsedCommand& cmd, ShellState& state) override;
+    bool canHandle(const std::string& command) const override;
+};
+
+// ExportCommandHandler - Handles 'export' command
+class ExportCommandHandler : public BuiltinCommandHandler {
+public:
+    bool handle(const ParsedCommand& cmd, ShellState& state) override;
+    bool canHandle(const std::string& command) const override;
+};
+
 // BuiltinCommandDispatcher - Dispatches commands to appropriate handlers
 // Implements IBuiltinDispatcher interface (Dependency Inversion Principle)
 class BuiltinCommandDispatcher : public IBuiltinDispatcher {

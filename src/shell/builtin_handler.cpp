@@ -138,6 +138,51 @@ bool BgCommandHandler::canHandle(const std::string& command) const {
     return command == "bg";
 }
 
+// PwdCommandHandler implementation
+bool PwdCommandHandler::handle(const ParsedCommand& /* cmd */, ShellState& state) {
+    std::cout << state.current_directory << "\n";
+    return true;
+}
+
+bool PwdCommandHandler::canHandle(const std::string& command) const {
+    return command == "pwd";
+}
+
+// ExportCommandHandler implementation
+bool ExportCommandHandler::handle(const ParsedCommand& cmd, ShellState& state) {
+    if (cmd.pipeline.commands[0].args.size() < 2) {
+        // No arguments - print all environment variables
+        for (const auto& pair : state.environment) {
+            std::cout << "export " << pair.first << "=" << pair.second << "\n";
+        }
+        return true;
+    }
+
+    // Parse VAR=VALUE format
+    const std::string& arg = cmd.pipeline.commands[0].args[1];
+    size_t eq_pos = arg.find('=');
+
+    if (eq_pos == std::string::npos) {
+        std::cerr << "export: invalid format. Use: export VAR=VALUE\n";
+        return true;
+    }
+
+    std::string var_name = arg.substr(0, eq_pos);
+    std::string var_value = arg.substr(eq_pos + 1);
+
+    // Set in shell's environment map
+    state.environment[var_name] = var_value;
+
+    // Also set in actual environment for child processes
+    setenv(var_name.c_str(), var_value.c_str(), 1);
+
+    return true;
+}
+
+bool ExportCommandHandler::canHandle(const std::string& command) const {
+    return command == "export";
+}
+
 // BuiltinCommandDispatcher implementation
 BuiltinCommandDispatcher::BuiltinCommandDispatcher() {
     handlers["cd"] = std::make_unique<CdCommandHandler>();
@@ -146,6 +191,8 @@ BuiltinCommandDispatcher::BuiltinCommandDispatcher() {
     handlers["jobs"] = std::make_unique<JobsCommandHandler>();
     handlers["fg"] = std::make_unique<FgCommandHandler>();
     handlers["bg"] = std::make_unique<BgCommandHandler>();
+    handlers["pwd"] = std::make_unique<PwdCommandHandler>();
+    handlers["export"] = std::make_unique<ExportCommandHandler>();
 }
 
 bool BuiltinCommandDispatcher::dispatch(const ParsedCommand& cmd, ShellState& state) {

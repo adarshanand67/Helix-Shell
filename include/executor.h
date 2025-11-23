@@ -34,9 +34,14 @@ public:
     // Returns exit status or error information
     int execute(const ParsedCommand& cmd);
 
+    // Get the PID of the last background job (if any)
+    // Returns 0 if no background job was started
+    pid_t getLastBackgroundPid() const { return last_background_pid; }
+
 private:
     // Execute a single command (may be part of a pipeline)
-    int executeSingleCommand(const Command& cmd, int input_fd = -1, int output_fd = -1);
+    // If background=true, doesn't wait for process and returns 0
+    int executeSingleCommand(const Command& cmd, int input_fd = -1, int output_fd = -1, bool background = false);
 
     // Execute command directly in child process (no fork, for pipelines)
     void executeCommandInChild(const Command& cmd);
@@ -52,6 +57,9 @@ private:
     std::unique_ptr<IEnvironmentExpander> env_expander;
     std::unique_ptr<IFileDescriptorManager> fd_manager;
     std::unique_ptr<IPipelineManager> pipeline_manager;
+
+    // Track last background job PID
+    pid_t last_background_pid = 0;
 };
 
 } // namespace helix
