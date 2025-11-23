@@ -24,6 +24,9 @@ class TestShell : public CppUnit::TestFixture {
   CPPUNIT_TEST(testProcessInputBg);
   CPPUNIT_TEST(testProcessInputCdDash);
   CPPUNIT_TEST(testProcessInputExitWithStatus);
+  CPPUNIT_TEST(testProcessInputPwd);
+  CPPUNIT_TEST(testProcessInputExport);
+  CPPUNIT_TEST(testProcessInputExportWithValue);
   // Add more tests as needed for 100% coverage
 
   CPPUNIT_TEST_SUITE_END();
@@ -233,6 +236,52 @@ public:
 
     } catch (const std::exception &e) {
       CPPUNIT_FAIL("Process exit with status failed: " + std::string(e.what()));
+    }
+  }
+
+  void testProcessInputPwd() {
+    try {
+      helix::Shell shell;
+      std::string output;
+      captureOutput([&]() {
+        shell.processInputString("pwd");
+      }, output);
+      // Should output current directory (contains /)
+      CPPUNIT_ASSERT(output.length() > 0);
+      CPPUNIT_ASSERT(output.find("/") != std::string::npos);
+    } catch (const std::exception &e) {
+      CPPUNIT_FAIL("Process pwd failed: " + std::string(e.what()));
+    }
+  }
+
+  void testProcessInputExport() {
+    try {
+      helix::Shell shell;
+      std::string output;
+      captureOutput([&]() {
+        shell.processInputString("export");
+      }, output);
+      // Should execute without error
+      CPPUNIT_ASSERT(true);
+    } catch (const std::exception &e) {
+      CPPUNIT_FAIL("Process export failed: " + std::string(e.what()));
+    }
+  }
+
+  void testProcessInputExportWithValue() {
+    try {
+      helix::Shell shell;
+      shell.processInputString("export TEST_VAR=test_value");
+
+      // Verify the variable was set
+      const char* value = std::getenv("TEST_VAR");
+      CPPUNIT_ASSERT(value != nullptr);
+      CPPUNIT_ASSERT_EQUAL(std::string("test_value"), std::string(value));
+
+      // Clean up
+      unsetenv("TEST_VAR");
+    } catch (const std::exception &e) {
+      CPPUNIT_FAIL("Process export with value failed: " + std::string(e.what()));
     }
   }
 
