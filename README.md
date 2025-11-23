@@ -19,6 +19,21 @@ brew install helix-shell
 helix
 ```
 
+#### Docker (Cross-Platform)
+
+```bash
+docker pull adarshanand67/helixshell:latest
+docker run -it --rm adarshanand67/helixshell:latest
+```
+
+Or build locally:
+```bash
+git clone https://github.com/adarshanand67/Helix-Shell.git
+cd Helix-Shell
+docker build -t helixshell .
+docker run -it --rm helixshell
+```
+
 #### From Source
 
 ```bash

@@ -27,3 +27,7 @@ hsh
 
 # Coverage reports
 coverage*
+
+# Docker workspace (user files, don't commit)
+workspace/*
+!workspace/README.md

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Main HelixShell service
+  helix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: helixshell:latest
+    container_name: helix-shell
+    stdin_open: true
+    tty: true
+    volumes:
+      # Mount a workspace directory for persistent files
+      - ./workspace:/home/shelluser/workspace
+      # Mount Git config (optional, for Git integration in prompt)
+      - ~/.gitconfig:/home/shelluser/.gitconfig:ro
+    environment:
+      - TERM=xterm-256color
+      - SHELL=/usr/local/bin/helix
+    working_dir: /home/shelluser/workspace
+    command: /usr/local/bin/helix
+
+  # Development version with source mounted
+  helix-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: helixshell:dev
+    container_name: helix-shell-dev
+    stdin_open: true
+    tty: true
+    volumes:
+      # Mount source code for development
+      - ./src:/build/src:ro
+      - ./include:/build/include:ro
+      - ./tests:/build/tests:ro
+      - ./Makefile:/build/Makefile:ro
+      # Workspace
+      - ./workspace:/home/shelluser/workspace
+    environment:
+      - TERM=xterm-256color
+      - SHELL=/usr/local/bin/helix
+      - DEV_MODE=1
+    working_dir: /home/shelluser/workspace
+    command: /usr/local/bin/helix
+    profiles:
+      - dev
+
+  # Test runner service
+  helix-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    image: helixshell:test
+    container_name: helix-test
+    volumes:
+      - ./src:/build/src:ro
+      - ./include:/build/include:ro
+      - ./tests:/build/tests:ro
+      - ./Makefile:/build/Makefile:ro
+    command: make test
+    profiles:
+      - test
