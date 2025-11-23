@@ -5,14 +5,6 @@
 [![Coverage Target](https://img.shields.io/badge/coverage%20target-100%25-blue)](https://github.com/adarshanand67/Helix-Shell)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Product Requirements Document (PRD)
-
-### Project Name: Helix Shell (`hsh`)
-### Version: 2.0
-### Status: Implementation in Progress
-### Target Platform: Unix-like Systems (Linux, macOS)
-### Language: C++ (C++23 Standard)
-
 ## UML Class Diagram
 
 ```mermaid
