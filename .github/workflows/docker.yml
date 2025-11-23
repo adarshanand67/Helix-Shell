@@ -1,0 +1,156 @@
+name: Docker Build & Publish
+
+on:
+  push:
+    branches: [ master, main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: adarshanand67/helixshell
+  PLATFORMS: linux/amd64,linux/arm64
+
+jobs:
+  # Build and test Docker image
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: ${{ env.DOCKER_IMAGE }}:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        load: true
+
+    - name: Test Docker image
+      run: |
+        echo "🧪 Testing Docker image..."
+
+        # Test that the image runs
+        docker run --rm ${{ env.DOCKER_IMAGE }}:test /bin/bash -c "which helix"
+
+        # Test that helix binary exists and is executable
+        docker run --rm ${{ env.DOCKER_IMAGE }}:test /bin/bash -c "test -x /usr/local/bin/helix && echo 'Binary is executable'"
+
+        # Test basic shell execution
+        echo "exit" | docker run -i --rm ${{ env.DOCKER_IMAGE }}:test
+
+        echo "✅ Docker tests passed!"
+
+    - name: Inspect image
+      run: |
+        echo "📊 Image details:"
+        docker images ${{ env.DOCKER_IMAGE }}:test
+        docker inspect ${{ env.DOCKER_IMAGE }}:test | grep -A 5 "Size"
+
+  # Publish to Docker Hub on tags
+  publish:
+    name: Publish to Docker Hub
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Build and push multi-platform image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: ${{ env.PLATFORMS }}
+        push: true
+        tags: |
+          ${{ env.DOCKER_IMAGE }}:latest
+          ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Update Docker Hub description
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ env.DOCKER_IMAGE }}
+        short-description: "Modern Unix shell with autocompletion, colored prompt, and advanced features"
+        readme-filepath: ./docs/DOCKER.md
+
+    - name: Create deployment summary
+      run: |
+        echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+        echo "- \`${{ env.DOCKER_IMAGE }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "- \`${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Platforms:** \`${{ env.PLATFORMS }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Installation" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -it --rm ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Publish latest on master branch pushes
+  publish-latest:
+    name: Publish Latest
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push latest
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: ${{ env.PLATFORMS }}
+        push: true
+        tags: ${{ env.DOCKER_IMAGE }}:edge
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
