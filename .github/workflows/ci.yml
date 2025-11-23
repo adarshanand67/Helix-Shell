@@ -21,12 +21,15 @@ jobs:
     - name: Install CppUnit (macOS)
       run: |
         brew update
-        brew install cppunit
+        brew install cppunit pkg-config
 
-        # Verify cppunit installation
-        cppunit-config --version
-        cppunit-config --cflags
-        cppunit-config --libs
+        # Verify cppunit installation using pkg-config (modern approach)
+        echo "CppUnit version:"
+        pkg-config --modversion cppunit
+        echo "CppUnit CFLAGS:"
+        pkg-config --cflags cppunit
+        echo "CppUnit LIBS:"
+        pkg-config --libs cppunit
 
     - name: Build project
       run: |
@@ -81,7 +84,7 @@ jobs:
     - name: Install CppUnit
       run: |
         brew update
-        brew install cppunit
+        brew install cppunit pkg-config
 
     - name: Check code formatting (C++)
       run: |

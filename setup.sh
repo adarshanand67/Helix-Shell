@@ -1,78 +1,113 @@
 #!/bin/bash
 
-# Helix Shell Setup Script for macOS
-# This script installs all dependencies required for building and testing the Helix Shell project
+# HelixShell Development Environment Setup Script
+# This script sets up all dependencies for building and testing the shell
 
-set -e  # Exit on any error
+set -e
 
-echo "🚀 Setting up Helix Shell development environment on macOS..."
-echo "================================================================="
+echo "🔧 Setting up HelixShell development environment..."
+echo ""
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+# Detect OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "📍 Detected: macOS"
 
-# Check if Homebrew is installed
-if ! command_exists brew; then
-    echo "❌ Homebrew is not installed. Please install Homebrew first:"
-    echo "   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-    echo "   OR visit: https://brew.sh/"
+    # Check for Homebrew
+    if ! command -v brew &> /dev/null; then
+        echo "❌ Homebrew not found!"
+        echo "   Install from: https://brew.sh"
+        exit 1
+    fi
+
+    echo "✅ Homebrew found"
+
+    # Install dependencies
+    echo ""
+    echo "📦 Installing dependencies..."
+
+    DEPS=("pkg-config" "cppunit")
+
+    for dep in "${DEPS[@]}"; do
+        if brew list "$dep" &>/dev/null; then
+            echo "   ✅ $dep already installed"
+        else
+            echo "   📥 Installing $dep..."
+            brew install "$dep"
+        fi
+    done
+
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "📍 Detected: Linux"
+
+    # Check for apt (Debian/Ubuntu)
+    if command -v apt-get &> /dev/null; then
+        echo "📦 Installing dependencies via apt..."
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libcppunit-dev
+    # Check for yum (RedHat/CentOS)
+    elif command -v yum &> /dev/null; then
+        echo "📦 Installing dependencies via yum..."
+        sudo yum install -y gcc-c++ make pkg-config cppunit-devel
+    else
+        echo "❌ Unsupported package manager"
+        echo "   Please install manually: pkg-config, cppunit"
+        exit 1
+    fi
+
+else
+    echo "❌ Unsupported operating system: $OSTYPE"
     exit 1
 fi
-
-echo "✅ Homebrew is installed"
-
-# Update Homebrew
-echo "📦 Updating Homebrew..."
-brew update
-
-# Install required packages
-PACKAGES=("cmake" "pkg-config" "cppunit")
-
-for package in "${PACKAGES[@]}"; do
-    if brew list "$package" >/dev/null 2>&1; then
-        echo "✅ $package is already installed"
-    else
-        echo "📦 Installing $package..."
-        brew install "$package"
-    fi
-done
 
 # Verify installations
 echo ""
 echo "🔍 Verifying installations..."
 
-if ! command_exists cmake; then
-    echo "❌ CMake not found in PATH after installation"
+if command -v pkg-config &> /dev/null; then
+    echo "   ✅ pkg-config: $(pkg-config --version)"
+else
+    echo "   ❌ pkg-config not found"
     exit 1
 fi
 
-if ! command_exists pkg-config; then
-    echo "❌ pkg-config not found in PATH after installation"
+if pkg-config --exists cppunit; then
+    echo "   ✅ CppUnit: $(pkg-config --modversion cppunit)"
+else
+    echo "   ❌ CppUnit not found via pkg-config"
     exit 1
 fi
 
-# Check if CppUnit is properly installed
-if ! pkg-config --libs cppunit >/dev/null 2>&1; then
-    echo "❌ CppUnit not properly installed"
-    exit 1
+# Setup Git hooks
+echo ""
+echo "🪝 Setting up Git hooks..."
+if [ -f "scripts/setup-hooks.sh" ]; then
+    chmod +x scripts/setup-hooks.sh
+    ./scripts/setup-hooks.sh
+else
+    echo "   ⚠️  Git hooks setup script not found"
+    echo "   Skipping hooks installation"
 fi
 
-echo "✅ All dependencies verified successfully!"
+# Test build
+echo ""
+echo "🔨 Testing build..."
+if make build > /dev/null 2>&1; then
+    echo "   ✅ Build test successful"
+    make clean > /dev/null 2>&1
+else
+    echo "   ⚠️  Build test failed"
+    echo "   This may be expected if source files are incomplete"
+fi
 
 echo ""
-echo "🎉 Setup complete! You can now build and test the Helix Shell:"
+echo "✅ Setup complete!"
 echo ""
-echo "   mkdir build"
-echo "   cd build"
-echo "   cmake .."
-echo "   make"
-echo "   ./hsh_tests  # Run tests"
-echo "   ./hsh        # Run the shell"
+echo "📋 Next steps:"
+echo "   1. Build the project:  make build"
+echo "   2. Run tests:          make test"
+echo "   3. Run the shell:      ./build/hsh"
 echo ""
-echo "For development with tests (when running tests):"
-echo "   cd build/tests"
-echo "   ./hsh_tests"
+echo "📚 Documentation:"
+echo "   - Project README:      README.md"
+echo "   - Git Hooks Guide:     scripts/README.md"
 echo ""
-echo "Happy coding! 🚀"

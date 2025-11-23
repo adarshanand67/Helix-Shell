@@ -362,7 +362,7 @@ Job List: A `std::map<int, Job>` or `std::vector<Job>` to store active backgroun
 
 | Phase    | Duration | Focus                 | Key Deliverables                      | Risk Assessment                          |
 |----------|----------|-----------------------|--------------------------------------|------------------------------------------|
-| Phase 1  | Week 1   | Foundation           | Repo setup, CMake, REPL loop, basic Tokenizer. | Low: Basic C++ setup. |
+| Phase 1  | Week 1   | Foundation           | Repo setup, Makefile, REPL loop, basic Tokenizer. | Low: Basic C++ setup. |
 | Phase 2  | Week 2   | Process Core         | fork/exec/wait implementation. Single command execution. cd built-in. | Medium: Getting fork logic right can be tricky for beginners. |
 | Phase 3  | Week 3   | I/O & Pipes          | Redirection (<, >, >>). Single pipes (`\|`). | Medium: FD management is critical. |
 | Phase 4  | Week 4   | Multi-Pipes          | Support for N-command pipelines. Logic generalization. | High: Complexity increases significantly with multiple pipes. |
@@ -409,7 +409,7 @@ Write a function `executePipeline(std::vector<Command>& cmds)` that:
 - **tests/**: Unit tests for the parser and integration tests for the shell.
 
 ### Build Artifacts:
-- **CMakeLists.txt**: Configuration for building the hsh binary.
+- **Makefile**: Configuration for building the hsh binary and running tests.
 - **hsh**: The compiled executable.
 
 ### Documentation:
@@ -434,7 +434,7 @@ Run the automated setup script:
 ```
 
 This script will automatically install and verify:
-- **CMake**: Build system
+- **Make**: Build system
 - **pkg-config**: Build configuration tool
 - **CppUnit**: Unit testing framework for C++
 
@@ -443,30 +443,49 @@ This script will automatically install and verify:
 If you prefer manual installation:
 
 ```bash
-brew install cmake pkg-config cppunit
+brew install pkg-config cppunit
 ```
+
+## Developer Setup
+
+### 1. Install Dependencies
+
+```bash
+brew install pkg-config cppunit
+```
+
+### 2. Setup Git Hooks (Required for contributors)
+
+```bash
+./scripts/setup-hooks.sh
+```
+
+This installs:
+- **Pre-commit hook**: Build checks, code quality validation
+- **Pre-push hook**: Full build + test suite validation
+
+See [scripts/README.md](scripts/README.md) for details.
 
 ## Building
 
 ### Standard Build
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+make build
 ```
 
 ### Build with Tests
 
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+make build
+make test
+```
 
-# Run all tests
-./hsh_tests
+### Clean Build
+
+```bash
+make clean
+make build
 ```
 
 ## Running
@@ -475,14 +494,13 @@ make
 # Run the shell
 ./build/hsh
 
-# Run tests separately
-cd build/tests
-./hsh_tests
+# Run tests
+make test
 ```
 
 ## Current Implementation Status
 
-- ✅ **Project Setup**: CMake build system, modular architecture
+- ✅ **Project Setup**: Makefile build system, modular architecture, Git hooks
 - ✅ **REPL Loop**: Interactive prompt with user@hostname:cwd format
 - ✅ **Tokenizer**: State machine parsing with quotes, escapes, metacharacters
 - ✅ **Parser**: Converts tokens to structured Command objects
