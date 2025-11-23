@@ -1,0 +1,41 @@
+# Build artifacts
+build/
+*.o
+*.out
+*.exe
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Homebrew tap (not needed in Docker)
+homebrew-tap/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Documentation (except README)
+docs/
+*.md
+!README.md
+
+# Test artifacts
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# Temporary files
+*.tmp
+*.log
+.cache/
