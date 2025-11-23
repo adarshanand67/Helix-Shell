@@ -1,6 +1,7 @@
 #include "shell.h" // Includes the Shell class definition, providing run() method for the main REPL loop, prompt display, input reading, and built-in command handling.
 #include "tokenizer.h" // Includes the Tokenizer class header, providing tokenize() method to split input strings into tokens (words, pipes, redirections, etc.).
 #include "parser.h" // Includes the Parser class header, providing parse() method to convert token sequences into ParsedCommand structures with pipelines and redirections.
+#include "readline_support.h" // Readline library integration for advanced autocompletion
 #include <iostream> // Provides standard I/O streams: std::cout for displaying prompt, history, and debug output; std::cin for reading user input - essential for REPL interaction.
 #include <iomanip> // Provides stream manipulators: std::setw, std::setfill for formatted output, specifically used in history command display.
 #include <unistd.h> // Provides Unix system calls: getuid, getcwd, chdir for user and directory management; gethostname for system hostname retrieval - used in prompt building and cd command.
@@ -29,6 +30,9 @@ namespace Colors {
 }
 
 Shell::Shell() : running(true) {
+    // Initialize readline for advanced autocompletion
+    ReadlineSupport::initialize();
+
     // Initialize environment
     char* home = getenv("HOME");
     if (home) {
@@ -65,7 +69,8 @@ Shell::Shell() : running(true) {
 }
 
 Shell::~Shell() {
-    // Cleanup will be added later
+    // Clean up readline
+    ReadlineSupport::cleanup();
 }
 
 int Shell::run() {
@@ -131,12 +136,15 @@ void Shell::showPrompt() {
 }
 
 std::string Shell::readInput() {
-    std::string line;
-    if (!std::getline(std::cin, line)) {
+    // Use readline for advanced autocompletion and history
+    std::string line = ReadlineSupport::readLineWithCompletion("");
+
+    if (line.empty() && std::cin.eof()) {
         // EOF (Ctrl+D) detected
         running = false;
         return "exit";
     }
+
     return line;
 }
 
