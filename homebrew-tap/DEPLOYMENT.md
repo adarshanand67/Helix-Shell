@@ -118,7 +118,7 @@ brew install helix-shell
 \`\`\`bash
 git clone https://github.com/adarshanand67/Helix-Shell.git
 cd Helix-Shell
-./setup.sh
+./scripts/setup.sh
 make build
 sudo make install  # If you create an install target
 \`\`\`

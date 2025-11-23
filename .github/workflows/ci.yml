@@ -355,7 +355,7 @@ jobs:
 
         # Required files
         [ -f Makefile ] && echo "✅ Makefile present" || { echo "❌ Makefile missing"; exit 1; }
-        [ -f setup.sh ] && echo "✅ setup.sh present" || { echo "❌ setup.sh missing"; exit 1; }
+        [ -f scripts/setup.sh ] && echo "✅ setup.sh present" || { echo "❌ setup.sh missing"; exit 1; }
         [ -f .gitignore ] && echo "✅ .gitignore present" || echo "⚠️  .gitignore missing"
 
         echo "✅ Project structure validated"

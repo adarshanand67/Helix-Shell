@@ -14,12 +14,12 @@ A modern Unix shell with advanced features including autocompletion, colored pro
 #### Linux/macOS (Binary Installer) - Recommended
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
 ```
 
 Or download and run manually:
 ```bash
-wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
 ```
 
 Options:
@@ -57,7 +57,7 @@ docker run -it --rm helixshell
 ```bash
 git clone https://github.com/adarshanand67/Helix-Shell.git
 cd Helix-Shell
-./setup.sh      # Install dependencies
+./scripts/setup.sh      # Install dependencies
 make build      # Build the shell
 ./build/hsh     # Run it
 ```
@@ -493,7 +493,7 @@ This project requires the following dependencies for building and testing:
 Run the automated setup script:
 
 ```bash
-./setup.sh
+./scripts/setup.sh
 ```
 
 This script will automatically install and verify:

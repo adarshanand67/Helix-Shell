@@ -6,9 +6,9 @@
 # It downloads the appropriate binary for your platform from GitHub releases.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
 #   or
-#   wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
 #
 # Binary installation location:
 #   Linux/macOS: ~/.local/bin/helix (or /usr/local/bin/helix with sudo)
@@ -217,7 +217,7 @@ Environment variables:
   USE_SUDO=true        Force sudo for installation
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
   bash install.sh -l
   sudo bash install.sh -s
 
