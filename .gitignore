@@ -24,3 +24,6 @@ hsh
 
 # Debug files
 *.dSYM/
+
+# Coverage reports
+coverage*

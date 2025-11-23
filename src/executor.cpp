@@ -39,6 +39,12 @@ Executor::~Executor() {
 int Executor::execute(const ParsedCommand& cmd) {
     size_t num_commands = cmd.pipeline.commands.size();
 
+    // Handle empty command
+    if (num_commands == 0) {
+        // Empty command should succeed
+        return 0;
+    }
+
     // Handle single command (no pipeline)
     if (num_commands == 1) {
         // Handle background execution
