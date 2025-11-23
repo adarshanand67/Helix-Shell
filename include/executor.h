@@ -1,12 +1,12 @@
-#ifndef HSHELL_EXECUTOR_H
-#define HSHELL_EXECUTOR_H
+#ifndef HELIX_EXECUTOR_H
+#define HELIX_EXECUTOR_H
 
 #include "types.h" // Includes project-wide type definitions for ParsedCommand, Command, Pipeline structures, and Token enums used in command execution.
 #include <string> // Provides std::string for executable paths, command arguments, and error messages.
 #include <vector> // Provides std::vector for storing command arguments and pipeline commands.
 #include <optional> // Provides std::optional for potential future use in optional execution parameters.
 
-namespace hshell {
+namespace helix {
 
 // Command Executor - handles execution of parsed commands
 class Executor {
@@ -49,6 +49,6 @@ private:
     int original_stderr;
 };
 
-} // namespace hshell
+} // namespace helix
 
-#endif // HSHELL_EXECUTOR_H
+#endif // HELIX_EXECUTOR_H

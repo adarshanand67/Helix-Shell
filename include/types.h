@@ -1,11 +1,11 @@
-#ifndef HSHELL_TYPES_H
-#define HSHELL_TYPES_H
+#ifndef HELIX_TYPES_H
+#define HELIX_TYPES_H
 
 #include <vector> // Provides std::vector for storing command arguments in Command struct and sequence of commands in pipelines.
 #include <string> // Provides std::string for storing token values, filenames, job commands, and other string data.
 #include <map> // Provides std::map for storing key-value pairs in shell environment variables (though currently not used directly here).
 
-namespace hshell {
+namespace helix {
 
 // Job status enumeration
 enum class JobStatus {
@@ -66,6 +66,6 @@ struct Token {
     std::string value;
 };
 
-} // namespace hshell
+} // namespace helix
 
-#endif // HSHELL_TYPES_H
+#endif // HELIX_TYPES_H

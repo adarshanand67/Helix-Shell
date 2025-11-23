@@ -15,13 +15,13 @@ class ParserTest : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE_END();
 
 private:
-    hshell::Tokenizer* tokenizer;
-    hshell::Parser* parser;
+    helix::Tokenizer* tokenizer;
+    helix::Parser* parser;
 
 public:
     void setUp() override {
-        tokenizer = new hshell::Tokenizer();
-        parser = new hshell::Parser();
+        tokenizer = new helix::Tokenizer();
+        parser = new helix::Parser();
     }
 
     void tearDown() override {
@@ -31,7 +31,7 @@ public:
 
     void testSimpleCommandParsing() {
         auto tokens = tokenizer->tokenize("ls -la");
-        hshell::ParsedCommand cmd = parser->parse(tokens);
+        helix::ParsedCommand cmd = parser->parse(tokens);
 
         CPPUNIT_ASSERT_EQUAL(size_t(1), cmd.pipeline.commands.size());
         CPPUNIT_ASSERT_EQUAL(size_t(2), cmd.pipeline.commands[0].args.size());
@@ -44,7 +44,7 @@ public:
 
     void testPipelineParsing() {
         auto tokens = tokenizer->tokenize("cat file.txt | grep \"search term\" | sort");
-        hshell::ParsedCommand cmd = parser->parse(tokens);
+        helix::ParsedCommand cmd = parser->parse(tokens);
 
         CPPUNIT_ASSERT_EQUAL(size_t(3), cmd.pipeline.commands.size());
 
@@ -66,7 +66,7 @@ public:
     void testRedirectionParsing() {
         // Input redirection
         auto tokens = tokenizer->tokenize("cat < input.txt");
-        hshell::ParsedCommand cmd = parser->parse(tokens);
+        helix::ParsedCommand cmd = parser->parse(tokens);
         CPPUNIT_ASSERT_EQUAL(std::string("input.txt"), cmd.pipeline.commands[0].input_file);
         CPPUNIT_ASSERT(cmd.pipeline.commands[0].output_file.empty());
 
@@ -97,7 +97,7 @@ public:
 
     void testBackgroundParsing() {
         auto tokens = tokenizer->tokenize("sleep 10 &");
-        hshell::ParsedCommand cmd = parser->parse(tokens);
+        helix::ParsedCommand cmd = parser->parse(tokens);
 
         CPPUNIT_ASSERT_EQUAL(true, cmd.background);
         CPPUNIT_ASSERT_EQUAL(std::string("sleep"), cmd.pipeline.commands[0].args[0]);
@@ -105,7 +105,7 @@ public:
 
     void testComplexPipeline() {
         auto tokens = tokenizer->tokenize("cat input.txt | grep \"pattern\" > results.txt &");
-        hshell::ParsedCommand cmd = parser->parse(tokens);
+        helix::ParsedCommand cmd = parser->parse(tokens);
 
         CPPUNIT_ASSERT_EQUAL(size_t(2), cmd.pipeline.commands.size());
         CPPUNIT_ASSERT_EQUAL(true, cmd.background);
@@ -123,7 +123,7 @@ public:
     void testParserErrorRecovery() {
         // Parse normally formed command
         auto tokens = tokenizer->tokenize("ls -l");
-        hshell::ParsedCommand cmd = parser->parse(tokens);
+        helix::ParsedCommand cmd = parser->parse(tokens);
         CPPUNIT_ASSERT_EQUAL(size_t(1), cmd.pipeline.commands.size());
 
         // Another command should parse correctly after the first

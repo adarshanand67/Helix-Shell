@@ -1,5 +1,5 @@
-#ifndef HSHELL_TEST_HELPERS_H
-#define HSHELL_TEST_HELPERS_H
+#ifndef HELIX_TEST_HELPERS_H
+#define HELIX_TEST_HELPERS_H
 
 #include "../include/parser.h"
 #include "../include/tokenizer.h"
@@ -150,8 +150,8 @@ inline bool isValidToken(const Token &token) {
 class EnhancedTestFixture : public CppUnit::TestFixture {
 protected:
   void setUp() override {
-    tokenizer = std::make_unique<hshell::Tokenizer>();
-    parser = std::make_unique<hshell::Parser>();
+    tokenizer = std::make_unique<helix::Tokenizer>();
+    parser = std::make_unique<helix::Parser>();
   }
 
   void tearDown() override {
@@ -159,14 +159,14 @@ protected:
     parser.reset();
   }
 
-  std::unique_ptr<hshell::Tokenizer> tokenizer;
-  std::unique_ptr<hshell::Parser> parser;
+  std::unique_ptr<helix::Tokenizer> tokenizer;
+  std::unique_ptr<helix::Parser> parser;
 
   // Helper for creating test tokens
-  std::vector<hshell::Token>
-  createTokens(std::initializer_list<std::pair<hshell::TokenType, std::string>>
+  std::vector<helix::Token>
+  createTokens(std::initializer_list<std::pair<helix::TokenType, std::string>>
                    token_specs) {
-    std::vector<hshell::Token> tokens;
+    std::vector<helix::Token> tokens;
     for (const auto &spec : token_specs) {
       tokens.emplace_back(spec.first, spec.second);
     }
@@ -174,7 +174,7 @@ protected:
   }
 
   // Helper for validating parsed commands
-  void validateCommand(const hshell::Command &cmd,
+  void validateCommand(const helix::Command &cmd,
                        const std::vector<std::string> &expected_args,
                        const std::string &expected_input = "",
                        const std::string &expected_output = "",
@@ -204,12 +204,12 @@ protected:
 // Test data structure for parameterized testing
 struct TokenizerTestCase {
   std::string input;
-  std::vector<hshell::Token> expected_tokens;
+  std::vector<helix::Token> expected_tokens;
   std::string description;
 };
 
 struct ParserTestCase {
-  std::vector<hshell::Token> input_tokens;
+  std::vector<helix::Token> input_tokens;
   std::vector<std::string> expected_command_args;
   std::string expected_input_file;
   std::string expected_output_file;
@@ -217,4 +217,4 @@ struct ParserTestCase {
   std::string description;
 };
 
-#endif // HSHELL_TEST_HELPERS_H
+#endif // HELIX_TEST_HELPERS_H

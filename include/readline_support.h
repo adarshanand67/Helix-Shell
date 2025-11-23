@@ -1,10 +1,10 @@
-#ifndef HSHELL_READLINE_SUPPORT_H
-#define HSHELL_READLINE_SUPPORT_H
+#ifndef HELIX_READLINE_SUPPORT_H
+#define HELIX_READLINE_SUPPORT_H
 
 #include <string>
 #include <vector>
 
-namespace hshell {
+namespace helix {
 
 // Readline-based autocompletion support
 class ReadlineSupport {
@@ -26,6 +26,6 @@ public:
     static int completion_index;
 };
 
-} // namespace hshell
+} // namespace helix
 
-#endif // HSHELL_READLINE_SUPPORT_H
+#endif // HELIX_READLINE_SUPPORT_H

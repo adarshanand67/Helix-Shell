@@ -50,8 +50,8 @@ public:
                                        "sort -r > result.txt 2> error.log &";
 
     try {
-      auto tokens = hshell::Tokenizer().tokenize(complexCommand);
-      auto parsedCommand = hshell::Parser().parse(tokens);
+      auto tokens = helix::Tokenizer().tokenize(complexCommand);
+      auto parsedCommand = helix::Parser().parse(tokens);
 
       // Verify the parsing worked
       CPPUNIT_ASSERT(parsedCommand.pipeline.commands.size() == 3);
@@ -81,8 +81,8 @@ public:
     try {
       // Create and destroy tokenizer/parser objects
       {
-        auto tokenizer = std::make_unique<hshell::Tokenizer>();
-        auto parser = std::make_unique<hshell::Parser>();
+        auto tokenizer = std::make_unique<helix::Tokenizer>();
+        auto parser = std::make_unique<helix::Parser>();
 
         // Test with various inputs to try memory paths
         const std::vector<std::string> testInputs = {
@@ -118,8 +118,8 @@ public:
           "\t\n\r\0" // Special characters
       };
 
-      auto tokenizer = std::make_unique<hshell::Tokenizer>();
-      auto parser = std::make_unique<hshell::Parser>();
+      auto tokenizer = std::make_unique<helix::Tokenizer>();
+      auto parser = std::make_unique<helix::Parser>();
 
       for (const auto &input : edgeCases) {
         try {
@@ -155,19 +155,19 @@ public:
       const std::string testCommand = "echo \"integration test\"";
 
       // Tokenize
-      auto tokens = hshell::Tokenizer().tokenize(testCommand);
+      auto tokens = helix::Tokenizer().tokenize(testCommand);
       CPPUNIT_ASSERT(!tokens.empty());
       CPPUNIT_ASSERT(tokens.size() >= 2); // Should have at least "echo" and the argument
 
       // Parse
-      auto parsedCmd = hshell::Parser().parse(tokens);
+      auto parsedCmd = helix::Parser().parse(tokens);
       CPPUNIT_ASSERT(!parsedCmd.pipeline.commands.empty());
       CPPUNIT_ASSERT(parsedCmd.pipeline.commands[0].args.size() >= 2);
       CPPUNIT_ASSERT(parsedCmd.pipeline.commands[0].args[0] == "echo");
       CPPUNIT_ASSERT(parsedCmd.pipeline.commands[0].args[1] == "integration test");
 
       // Execute and check return code
-      int exitCode = hshell::Executor().execute(parsedCmd);
+      int exitCode = helix::Executor().execute(parsedCmd);
 
       // Verify execution worked - exit code should be 0 for successful command
       // Note: echo normally returns 0 on success
@@ -189,19 +189,19 @@ public:
     try {
       // Test a command that should succeed (assume 'true' exists or use a safe alternative)
       const std::string successCommand = "true";
-      auto tokens = hshell::Tokenizer().tokenize(successCommand);
-      auto parsedCmd = hshell::Parser().parse(tokens);
+      auto tokens = helix::Tokenizer().tokenize(successCommand);
+      auto parsedCmd = helix::Parser().parse(tokens);
 
       // Execute and check exit code
-      int exitCode = hshell::Executor().execute(parsedCmd);
+      int exitCode = helix::Executor().execute(parsedCmd);
       CPPUNIT_ASSERT(exitCode == 0);  // 'true' should return 0
 
       // Test a command that returns non-zero exit code (assume 'false' exists)
       const std::string failCommand = "false";
-      auto failTokens = hshell::Tokenizer().tokenize(failCommand);
-      auto failParsedCmd = hshell::Parser().parse(failTokens);
+      auto failTokens = helix::Tokenizer().tokenize(failCommand);
+      auto failParsedCmd = helix::Parser().parse(failTokens);
 
-      int failExitCode = hshell::Executor().execute(failParsedCmd);
+      int failExitCode = helix::Executor().execute(failParsedCmd);
       // Note: 'false' should return 1, but we just verify the command ran
       // (Some systems might not have 'false', so we mainly test that subprocess was created)
       CPPUNIT_ASSERT(failExitCode >= 0);  // Verify exit code handling works

@@ -1,6 +1,6 @@
-# HelixShell Configuration File (.hshellrc)
+# HelixShell Configuration File (.helixrc)
 # This file configures the appearance and behavior of HelixShell (hsh)
-# Place this file in your home directory (~/.hshellrc) for user-specific settings
+# Place this file in your home directory (~/.helixrc) for user-specific settings
 # or in the current directory for project-specific settings
 
 # ------------------------------------------------------------------------------

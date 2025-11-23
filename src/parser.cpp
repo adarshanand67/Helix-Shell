@@ -1,7 +1,7 @@
 #include "parser.h" // Includes the Parser class definition, providing parse() method to convert token sequences into ParsedCommand structures, including pipeline and redirection handling.
 #include <iostream> // Provides standard error stream: std::cerr for reporting parsing errors - used when unexpected tokens are encountered during command analysis.
 
-namespace hshell {
+namespace helix {
 
 ParsedCommand Parser::parse(const std::vector<Token>& tokens) {
     ParsedCommand result;
@@ -138,4 +138,4 @@ std::string Parser::extractFilename(const Token& token) {
     return token.value;
 }
 
-} // namespace hshell
+} // namespace helix

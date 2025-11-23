@@ -1,5 +1,5 @@
-#ifndef HSHELL_SHELL_H
-#define HSHELL_SHELL_H
+#ifndef HELIX_SHELL_H
+#define HELIX_SHELL_H
 
 #include "types.h"
 #include "tokenizer.h"
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace hshell {
+namespace helix {
 
 // Main shell class managing the REPL loop and overall shell state
 class Shell {
@@ -65,6 +65,6 @@ private:
     void resumeInBackground(int job_id);
 };
 
-} // namespace hshell
+} // namespace helix
 
-#endif // HSHELL_SHELL_H
+#endif // HELIX_SHELL_H

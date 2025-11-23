@@ -53,9 +53,9 @@ class TestExecutor : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
 private:
-  std::unique_ptr<hshell::Executor> executor;
-  std::unique_ptr<hshell::Tokenizer> tokenizer;
-  std::unique_ptr<hshell::Parser> parser;
+  std::unique_ptr<helix::Executor> executor;
+  std::unique_ptr<helix::Tokenizer> tokenizer;
+  std::unique_ptr<helix::Parser> parser;
 
   // Test utilities
   void assertCommandExitCode(const std::string& command_str, int expected_exit_code) {
@@ -89,9 +89,9 @@ private:
 
 public:
   void setUp() {
-    executor = std::make_unique<hshell::Executor>();
-    tokenizer = std::make_unique<hshell::Tokenizer>();
-    parser = std::make_unique<hshell::Parser>();
+    executor = std::make_unique<helix::Executor>();
+    tokenizer = std::make_unique<helix::Tokenizer>();
+    parser = std::make_unique<helix::Parser>();
   }
 
   void tearDown() {

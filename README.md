@@ -11,25 +11,9 @@ A modern Unix shell with advanced features including autocompletion, colored pro
 
 ### Installation
 
-#### Linux/macOS (Binary Installer) - Recommended
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
-```
-
-Or download and run manually:
-```bash
-wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
-```
-
-Options:
-- `-l, --local`: Install to `~/.local/bin` instead of system-wide
-- `-s, --system`: Force system installation (requires sudo)
-- `-v, --version VER`: Install specific version
-
-The installer automatically detects your platform (Linux/macOS) and architecture (x86_64/arm64).
-
 #### macOS (Homebrew)
+
+Install HelixShell via Homebrew:
 
 ```bash
 brew tap adarshanand67/helix-shell
@@ -59,7 +43,7 @@ git clone https://github.com/adarshanand67/Helix-Shell.git
 cd Helix-Shell
 ./scripts/setup.sh      # Install dependencies
 make build      # Build the shell
-./build/hsh     # Run it
+./build/helix   # Run it
 ```
 
 ### Features
@@ -251,7 +235,7 @@ Unlike feature-bloated modern shells that include scripting engines, plugins, an
 
 **As a User**, I want a history feature that persists commands in memory. I should be able to see a list of my past actions (`history`) and re-execute complex strings without retyping, increasing my efficiency.
 
-**As a User**, I want the shell to handle errors gracefully. If I make a typo or try to execute a non-existent command, the shell should print a helpful error message (e.g., "hsh: command not found: foo") rather than crashing.
+**As a User**, I want the shell to handle errors gracefully. If I make a typo or try to execute a non-existent command, the shell should print a helpful error message (e.g., "helix: command not found: foo") rather than crashing.
 
 ## 3. Functional Requirements
 
@@ -498,14 +482,14 @@ Run the automated setup script:
 
 #### Configuration
 
-Customize your HelixShell experience with `.hshellrc`:
+Customize your HelixShell experience with `.helixrc`:
 
 ```bash
 # Copy the example config to your home directory
-cp .hshellrc ~/.hshellrc
+cp .helixrc ~/.helixrc
 
 # Edit colors, themes, and prompt format
-nano ~/.hshellrc
+nano ~/.helixrc
 ```
 
 Features:

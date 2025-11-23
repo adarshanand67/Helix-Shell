@@ -78,7 +78,7 @@ set(TEST_SOURCES
 # Main executable
 add_executable(hsh ${SOURCES})
 target_link_libraries(hsh PUBLIC ${Readline_LDFLAGS})
-set_target_properties(hsh PROPERTIES OUTPUT_NAME "hsh")
+set_target_properties(hsh PROPERTIES OUTPUT_NAME "helix")
 
 # Test executable
 add_executable(hsh_tests ${CORE_SOURCES} ${TEST_SOURCES})

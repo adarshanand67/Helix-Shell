@@ -1,11 +1,11 @@
-#ifndef HSHELL_TOKENIZER_H
-#define HSHELL_TOKENIZER_H
+#ifndef HELIX_TOKENIZER_H
+#define HELIX_TOKENIZER_H
 
 #include "types.h" // Includes type definitions: Token, TokenType enum for token classification and tokenizer states.
 #include <vector> // Provides std::vector for storing the sequence of parsed tokens.
 #include <string> // Provides std::string for storing token values and manipulating substrings during tokenization.
 
-namespace hshell {
+namespace helix {
 
 // State machine states for the tokenizer
 enum class TokenizerState {
@@ -36,6 +36,6 @@ private:
     size_t getTokenLength(const std::string& input, size_t i);
 };
 
-} // namespace hshell
+} // namespace helix
 
-#endif // HSHELL_TOKENIZER_H
+#endif // HELIX_TOKENIZER_H

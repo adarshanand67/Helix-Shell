@@ -1,5 +1,5 @@
-#ifndef HSHELL_TEST_SHELL_H
-#define HSHELL_TEST_SHELL_H
+#ifndef HELIX_TEST_SHELL_H
+#define HELIX_TEST_SHELL_H
 
 #include "../src/shell.h"
 #include <cppunit/TestAssert.h>
@@ -49,4 +49,4 @@ public:
     }
 };
 
-#endif // HSHELL_TEST_SHELL_H
+#endif // HELIX_TEST_SHELL_H

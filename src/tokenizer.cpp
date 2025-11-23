@@ -1,7 +1,7 @@
 #include "tokenizer.h" // Includes the Tokenizer class definition, providing tokenize() method to break input strings into tokens using a state machine (normal, double quote, single quote).
 #include <iostream> // Provides standard I/O streams (currently unused in this file, but included for potential debug output or future development).
 
-namespace hshell {
+namespace helix {
 
 // Simple tokenizer implementation based on the PRD requirements
 // The algorithm uses a state machine approach similar to what might be found
@@ -216,4 +216,4 @@ size_t Tokenizer::getTokenLength(const std::string &input, size_t i) {
   // Single character tokens
   return 1;
 }
-} // namespace hshell
+} // namespace helix

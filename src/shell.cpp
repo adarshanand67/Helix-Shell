@@ -13,7 +13,7 @@
 #include <fstream> // Provides file stream operations for reading git branch information.
 #include <sstream> // Provides string stream operations for parsing git branch information.
 
-namespace hshell {
+namespace helix {
 
 // ANSI color codes for beautiful prompts
 namespace Colors {
@@ -64,7 +64,7 @@ Shell::Shell() : running(true) {
     if (gethostname(hostname, sizeof(hostname)) == 0) {
         prompt_format = std::string(user ? user : "user") + "@" + hostname + ":";
     } else {
-        prompt_format = std::string(user ? user : "user") + "@hsh:";
+        prompt_format = std::string(user ? user : "user") + "@helix:";
     }
 }
 
@@ -74,7 +74,7 @@ Shell::~Shell() {
 }
 
 int Shell::run() {
-    std::cout << "Helix Shell (hsh) v2.0 - Type 'exit' to quit\n";
+    std::cout << "Helix Shell (helix) v2.0 - Type 'exit' to quit\n";
 
     while (running) {
         showPrompt();
@@ -495,4 +495,4 @@ std::string Shell::handleTabCompletion(const std::string& currentInput, size_t /
     return currentInput;
 }
 
-} // namespace hshell
+} // namespace helix

@@ -8,7 +8,7 @@
 #include <cstdlib> // Provides general utilities: getenv for accessing environment variables like PATH - essential for searching for executable commands.
 #include <regex> // Provides regular expressions for environment variable expansion.
 
-namespace hshell {
+namespace helix {
 
 Executor::Executor() {
     // Save original file descriptors
@@ -432,4 +432,4 @@ void Executor::executeCommandInChild(const Command& cmd) {
     exit(1);
 }
 
-} // namespace hshell
+} // namespace helix

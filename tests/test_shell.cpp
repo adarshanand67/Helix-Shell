@@ -53,7 +53,7 @@ public:
   void testShellConstructor() {
     // Test construction and initialization
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       // Constructor should initialize members
       // We can verify by checking that no exceptions are thrown
@@ -66,7 +66,7 @@ public:
 
   void testProcessInputEmpty() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
       std::string output;
       captureOutput([&]() {
         shell.processInputString("");
@@ -83,7 +83,7 @@ public:
 
   void testProcessInputExit() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       // Exit should set running to false, but since processInput returns false to break the loop
       // processInputString returns true if continue, false if exit
@@ -100,7 +100,7 @@ public:
 
   void testProcessInputCd() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -117,7 +117,7 @@ public:
 
   void testProcessInputHistory() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -138,7 +138,7 @@ public:
 
   void testProcessInputEcho() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -156,7 +156,7 @@ public:
 
   void testProcessInputJobs() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -172,7 +172,7 @@ public:
 
   void testProcessInputFg() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -188,7 +188,7 @@ public:
 
   void testProcessInputBg() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -204,7 +204,7 @@ public:
 
   void testProcessInputCdDash() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       // First cd somewhere
       shell.processInputString("cd /tmp");
@@ -223,7 +223,7 @@ public:
 
   void testProcessInputExitWithStatus() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -238,7 +238,7 @@ public:
 
   void testProcessInputFgNoArg() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -255,7 +255,7 @@ public:
 
   void testProcessInputBgNoArg() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -272,7 +272,7 @@ public:
 
   void testProcessInputExitInvalid() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       std::string output;
       captureOutput([&]() {
@@ -290,7 +290,7 @@ public:
 
   void testShellRun() {
     try {
-      hshell::Shell shell;
+      helix::Shell shell;
 
       // Mock cin with "exit\n"
       std::stringstream input("exit\n");

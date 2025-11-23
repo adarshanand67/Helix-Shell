@@ -1,11 +1,11 @@
-#ifndef HSHELL_PARSER_H
-#define HSHELL_PARSER_H
+#ifndef HELIX_PARSER_H
+#define HELIX_PARSER_H
 
 #include "types.h" // Includes type definitions: Token, TokenType, ParsedCommand, Command structs, and Pipeline structures used in parsing.
 #include <vector> // Provides std::vector for storing sequences of parsed commands, tokens, and command arguments.
 #include <string> // Provides std::string for storing token values, filenames in redirections, and command arguments.
 
-namespace hshell {
+namespace helix {
 
 // Command Parser - converts tokens into structured commands
 class Parser {
@@ -22,6 +22,6 @@ private:
     std::string extractFilename(const Token& token);
 };
 
-} // namespace hshell
+} // namespace helix
 
-#endif // HSHELL_PARSER_H
+#endif // HELIX_PARSER_H

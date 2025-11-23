@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     // The shell will handle these internally for foreground processes
 
     try {
-        hshell::Shell shell;
+        helix::Shell shell;
         return shell.run();
     } catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;

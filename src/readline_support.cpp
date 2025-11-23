@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-namespace hshell {
+namespace helix {
 
 // Static member initialization
 std::vector<std::string> ReadlineSupport::available_commands;
@@ -210,4 +210,4 @@ char* path_generator(const char* text, int state) {
     return nullptr;
 }
 
-} // namespace hshell
+} // namespace helix
