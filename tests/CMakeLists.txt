@@ -21,6 +21,10 @@ include_directories(${CPPUNIT_INCLUDE_DIRS})
 set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/tokenizer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/parser.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/executor.cpp
+    test_helpers.h
+    test_executor.cpp
+    test_integration.cpp
     test_tokenizer.cpp
     test_parser.cpp
     test_main.cpp
