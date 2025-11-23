@@ -1,123 +1,113 @@
 #include "../include/tokenizer.h" // Includes the Tokenizer class and its tokenize() method for testing various tokenization scenarios.
 #include "../include/types.h" // Includes Token, TokenType, and other type definitions needed for creating test tokens and checking types.
-#include <iostream> // Provides std::cout for displaying test progress and completion messages.
-#include <cassert> // Provides assert() macro for verifying tokenization results in unit tests.
+#include <cppunit/TestFixture.h>
+#include <cppunit/extensions/HelperMacros.h>
 
-// Simple test functions for basic functionality testing
-using namespace hshell;
+class TokenizerTest : public CppUnit::TestFixture {
+    CPPUNIT_TEST_SUITE(TokenizerTest);
+    CPPUNIT_TEST(testSimpleTokenization);
+    CPPUNIT_TEST(testPipeTokenization);
+    CPPUNIT_TEST(testRedirectionTokenization);
+    CPPUNIT_TEST(testQuoting);
+    CPPUNIT_TEST(testEdgeCases);
+    CPPUNIT_TEST(testComplexCommand);
+    CPPUNIT_TEST_SUITE_END();
 
-void test_simple_tokenization() {
-    Tokenizer tokenizer;
-    auto tokens = tokenizer.tokenize("ls -la");
+private:
+    hshell::Tokenizer* tokenizer;
 
-    assert(tokens.size() == 3);
-    assert(tokens[0].type == TokenType::WORD);
-    assert(tokens[0].value == "ls");
-    assert(tokens[1].type == TokenType::WORD);
-    assert(tokens[1].value == "-la");
-    assert(tokens[2].type == TokenType::END_OF_INPUT);
+public:
+    void setUp() override {
+        tokenizer = new hshell::Tokenizer();
+    }
 
-    std::cout << "✓ Simple tokenization test passed\n";
-}
+    void tearDown() override {
+        delete tokenizer;
+    }
 
-void test_pipe_tokenization() {
-    Tokenizer tokenizer;
-    auto tokens = tokenizer.tokenize("cat file | grep text");
+    void testSimpleTokenization() {
+        auto tokens = tokenizer->tokenize("ls -la");
 
-    assert(tokens.size() == 6);
-    assert(tokens[0].type == TokenType::WORD && tokens[0].value == "cat");
-    assert(tokens[1].type == TokenType::WORD && tokens[1].value == "file");
-    assert(tokens[2].type == TokenType::PIPE && tokens[2].value == "|");
-    assert(tokens[3].type == TokenType::WORD && tokens[3].value == "grep");
-    assert(tokens[4].type == TokenType::WORD && tokens[4].value == "text");
-    assert(tokens[5].type == TokenType::END_OF_INPUT);
+        CPPUNIT_ASSERT_EQUAL(size_t(3), tokens.size());
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::WORD, tokens[0].type);
+        CPPUNIT_ASSERT_EQUAL(std::string("ls"), tokens[0].value);
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::WORD, tokens[1].type);
+        CPPUNIT_ASSERT_EQUAL(std::string("-la"), tokens[1].value);
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::END_OF_INPUT, tokens[2].type);
+    }
 
-    std::cout << "✓ Pipe tokenization test passed\n";
-}
+    void testPipeTokenization() {
+        auto tokens = tokenizer->tokenize("cat file | grep text");
 
-void test_redirection_tokenization() {
-    Tokenizer tokenizer;
-    auto tokens = tokenizer.tokenize("echo hello > output.txt");
+        CPPUNIT_ASSERT_EQUAL(size_t(6), tokens.size());
+        CPPUNIT_ASSERT(tokens[0].type == hshell::TokenType::WORD && tokens[0].value == "cat");
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::WORD && tokens[1].value == "file");
+        CPPUNIT_ASSERT(tokens[2].type == hshell::TokenType::PIPE && tokens[2].value == "|");
+        CPPUNIT_ASSERT(tokens[3].type == hshell::TokenType::WORD && tokens[3].value == "grep");
+        CPPUNIT_ASSERT(tokens[4].type == hshell::TokenType::WORD && tokens[4].value == "text");
+        CPPUNIT_ASSERT(tokens[5].type == hshell::TokenType::END_OF_INPUT);
+    }
 
-    assert(tokens.size() == 5);
-    assert(tokens[0].type == TokenType::WORD && tokens[0].value == "echo");
-    assert(tokens[1].type == TokenType::WORD && tokens[1].value == "hello");
-    assert(tokens[2].type == TokenType::REDIRECT_OUT && tokens[2].value == ">");
-    assert(tokens[3].type == TokenType::WORD && tokens[3].value == "output.txt");
-    assert(tokens[4].type == TokenType::END_OF_INPUT);
+    void testRedirectionTokenization() {
+        auto tokens = tokenizer->tokenize("echo hello > output.txt");
 
-    std::cout << "✓ Redirection tokenization test passed\n";
-}
+        CPPUNIT_ASSERT_EQUAL(size_t(5), tokens.size());
+        CPPUNIT_ASSERT(tokens[0].type == hshell::TokenType::WORD && tokens[0].value == "echo");
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::WORD && tokens[1].value == "hello");
+        CPPUNIT_ASSERT(tokens[2].type == hshell::TokenType::REDIRECT_OUT && tokens[2].value == ">");
+        CPPUNIT_ASSERT(tokens[3].type == hshell::TokenType::WORD && tokens[3].value == "output.txt");
+        CPPUNIT_ASSERT(tokens[4].type == hshell::TokenType::END_OF_INPUT);
+    }
 
-void test_quoting() {
-    Tokenizer tokenizer;
+    void testQuoting() {
+        // Double quotes
+        auto tokens = tokenizer->tokenize("echo \"hello world\"");
+        CPPUNIT_ASSERT_EQUAL(size_t(3), tokens.size());
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::WORD && tokens[1].value == "hello world");
 
-    // Double quotes
-    auto tokens = tokenizer.tokenize("echo \"hello world\"");
-    assert(tokens.size() == 3);
-    assert(tokens[1].type == TokenType::WORD && tokens[1].value == "hello world");
+        // Single quotes
+        tokens = tokenizer->tokenize("echo 'single quotes'");
+        CPPUNIT_ASSERT_EQUAL(size_t(3), tokens.size());
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::WORD && tokens[1].value == "single quotes");
 
-    // Single quotes
-    tokens = tokenizer.tokenize("echo 'single quotes'");
-    assert(tokens.size() == 3);
-    assert(tokens[1].type == TokenType::WORD && tokens[1].value == "single quotes");
+        // Escaped characters
+        tokens = tokenizer->tokenize("echo hello\\ world");
+        CPPUNIT_ASSERT_EQUAL(size_t(3), tokens.size());
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::WORD && tokens[1].value == "hello world");
+    }
 
-    // Escaped characters
-    tokens = tokenizer.tokenize("echo hello\\ world");
-    assert(tokens.size() == 3);
-    assert(tokens[1].type == TokenType::WORD && tokens[1].value == "hello world");
+    void testEdgeCases() {
+        // Empty input
+        auto tokens = tokenizer->tokenize("");
+        CPPUNIT_ASSERT_EQUAL(size_t(1), tokens.size());
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::END_OF_INPUT, tokens[0].type);
 
-    std::cout << "✓ Quoting tests passed\n";
-}
+        // Whitespace only
+        tokens = tokenizer->tokenize("   \t   ");
+        CPPUNIT_ASSERT_EQUAL(size_t(1), tokens.size());
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::END_OF_INPUT, tokens[0].type);
 
-void test_edge_cases() {
-    Tokenizer tokenizer;
+        // Trailing whitespace
+        tokens = tokenizer->tokenize("ls   ");
+        CPPUNIT_ASSERT_EQUAL(size_t(2), tokens.size());
+        CPPUNIT_ASSERT(tokens[0].type == hshell::TokenType::WORD && tokens[0].value == "ls");
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::END_OF_INPUT);
+    }
 
-    // Empty input
-    auto tokens = tokenizer.tokenize("");
-    assert(tokens.size() == 1 && tokens[0].type == TokenType::END_OF_INPUT);
+    void testComplexCommand() {
+        auto tokens = tokenizer->tokenize("cat \"my file.txt\" | grep -i \"search pattern\" > results.txt &");
 
-    // Whitespace only
-    tokens = tokenizer.tokenize("   \t   ");
-    assert(tokens.size() == 1 && tokens[0].type == TokenType::END_OF_INPUT);
+        CPPUNIT_ASSERT_EQUAL(size_t(10), tokens.size());
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::WORD, tokens[0].type); // cat
+        CPPUNIT_ASSERT(tokens[1].type == hshell::TokenType::WORD && tokens[1].value == "my file.txt");
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::PIPE, tokens[2].type);
+        CPPUNIT_ASSERT(tokens[3].type == hshell::TokenType::WORD && tokens[3].value == "grep");
+        CPPUNIT_ASSERT(tokens[4].type == hshell::TokenType::WORD && tokens[4].value == "-i");
+        CPPUNIT_ASSERT(tokens[5].type == hshell::TokenType::WORD && tokens[5].value == "search pattern");
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::REDIRECT_OUT, tokens[6].type);
+        CPPUNIT_ASSERT(tokens[7].type == hshell::TokenType::WORD && tokens[7].value == "results.txt");
+        CPPUNIT_ASSERT_EQUAL(hshell::TokenType::BACKGROUND, tokens[8].type);
+    }
+};
 
-    // Trailing whitespace
-    tokens = tokenizer.tokenize("ls   ");
-    assert(tokens.size() == 2);
-    assert(tokens[0].type == TokenType::WORD && tokens[0].value == "ls");
-    assert(tokens[1].type == TokenType::END_OF_INPUT);
-
-    std::cout << "✓ Edge case tests passed\n";
-}
-
-void test_complex_command() {
-    Tokenizer tokenizer;
-    auto tokens = tokenizer.tokenize("cat \"my file.txt\" | grep -i \"search pattern\" > results.txt &");
-
-    assert(tokens.size() == 10);
-    assert(tokens[0].type == TokenType::WORD); // cat
-    assert(tokens[1].type == TokenType::WORD && tokens[1].value == "my file.txt");
-    assert(tokens[2].type == TokenType::PIPE);
-    assert(tokens[3].type == TokenType::WORD && tokens[3].value == "grep");
-    assert(tokens[4].type == TokenType::WORD && tokens[4].value == "-i");
-    assert(tokens[5].type == TokenType::WORD && tokens[5].value == "search pattern");
-    assert(tokens[6].type == TokenType::REDIRECT_OUT);
-    assert(tokens[7].type == TokenType::WORD && tokens[7].value == "results.txt");
-    assert(tokens[8].type == TokenType::BACKGROUND);
-
-    std::cout << "✓ Complex command test passed\n";
-}
-
-// Main test runner
-void run_tokenizer_tests() {
-    std::cout << "Running Tokenizer Tests...\n";
-
-    test_simple_tokenization();
-    test_pipe_tokenization();
-    test_redirection_tokenization();
-    test_quoting();
-    test_edge_cases();
-    test_complex_command();
-
-    std::cout << "All tokenizer tests passed! ✓\n";
-}
+CPPUNIT_TEST_SUITE_REGISTRATION(TokenizerTest);

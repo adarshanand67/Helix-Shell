@@ -309,7 +309,34 @@ Write a function `executePipeline(std::vector<Command>& cmds)` that:
 - **Valgrind Output Report** showing 0 bytes definitively lost.
 - **Test script execution logs** confirming feature parity with requirements.
 
+## Dependencies
+
+This project requires the following dependencies for building and testing:
+
+### macOS (with Homebrew)
+
+Run the automated setup script:
+
+```bash
+./setup.sh
+```
+
+This script will automatically install and verify:
+- **CMake**: Build system
+- **pkg-config**: Build configuration tool
+- **CppUnit**: Unit testing framework for C++
+
+### Manual Installation
+
+If you prefer manual installation:
+
+```bash
+brew install cmake pkg-config cppunit
+```
+
 ## Building
+
+### Standard Build
 
 ```bash
 mkdir build
@@ -318,10 +345,27 @@ cmake ..
 make
 ```
 
+### Build with Tests
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
+
+# Run all tests
+./hsh_tests
+```
+
 ## Running
 
 ```bash
+# Run the shell
 ./build/hsh
+
+# Run tests separately
+cd build/tests
+./hsh_tests
 ```
 
 ## Current Implementation Status
