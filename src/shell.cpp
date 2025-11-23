@@ -165,26 +165,8 @@ bool Shell::processInput(const std::string& input) {
     size_t end = trimmed.find_last_not_of(" \t");
     trimmed = trimmed.substr(start, end - start + 1);
 
-    // Debug: print the input we're processing
-    std::cout << "Processing input: '" << input << "'\n";
-    std::cout << "Trimmed: '" << trimmed << "'\n";
-
     // Tokenize and parse the command
     auto tokens = tokenizer.tokenize(trimmed);
-
-    std::cout << "Tokens count: " << tokens.size() << "\n";
-
-    // For now, just print the tokens for debugging
-    std::cout << "Tokens: ";
-    for (size_t idx = 0; idx < tokens.size(); ++idx) {
-        const auto& token = tokens[idx];
-        if (token.type == TokenType::END_OF_INPUT) {
-            std::cout << "[" << idx << ":END]";
-            break;
-        }
-        std::cout << "[" << idx << ":" << (int)token.type << ":" << token.value << "] ";
-    }
-    std::cout << "\n";
 
 
 
