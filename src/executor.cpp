@@ -37,20 +37,124 @@ Executor::~Executor() {
 }
 
 int Executor::execute(const ParsedCommand& cmd) {
-    // For now, handle only single commands (no pipelines)
-    if (cmd.pipeline.commands.size() != 1) {
-        reportError("Pipelines not yet implemented");
-        return -1;
+    size_t num_commands = cmd.pipeline.commands.size();
+
+    // Handle single command (no pipeline)
+    if (num_commands == 1) {
+        // Handle background execution
+        if (cmd.background) {
+            // Create background job (not implemented yet)
+            reportError("Background execution (&) not yet implemented");
+            return -1;
+        }
+        return executeSingleCommand(cmd.pipeline.commands[0]);
     }
 
-    // Handle background execution
+    // Handle pipeline
     if (cmd.background) {
-        // Create background job (not implemented yet)
-        reportError("Background execution (&) not yet implemented");
+        reportError("Background execution (&) not supported for pipelines yet");
         return -1;
     }
 
-    return executeSingleCommand(cmd.pipeline.commands[0]);
+    // Create pipes between commands
+    std::vector<std::pair<int, int>> pipes; // [read_fd, write_fd] pairs
+    pipes.reserve(num_commands - 1);
+
+    for (size_t i = 0; i < num_commands - 1; ++i) {
+        int pipe_fds[2];
+        if (pipe(pipe_fds) == -1) {
+            reportError("Failed to create pipe");
+            return -1;
+        }
+        pipes.emplace_back(pipe_fds[0], pipe_fds[1]); // [read_fd, write_fd]
+    }
+
+    // Fork and execute each command in the pipeline
+    std::vector<pid_t> pids;
+    pids.reserve(num_commands);
+
+    for (size_t i = 0; i < num_commands; ++i) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            reportError("Fork failed for pipeline command");
+            // Clean up pipes
+            for (auto& pipe_fds : pipes) {
+                close(pipe_fds.first);
+                close(pipe_fds.second);
+            }
+            return -1;
+        }
+
+        if (pid == 0) { // Child process
+            // Setup input redirection for this command
+            int input_fd = -1;
+            if (i > 0) {
+                // Read from previous pipe
+                input_fd = pipes[i-1].first;
+                if (dup2(input_fd, STDIN_FILENO) == -1) {
+                    std::cerr << "Failed to redirect stdin from pipe\n";
+                    exit(1);
+                }
+                close(pipes[i-1].first);
+                close(pipes[i-1].second);
+            }
+
+            // Setup output redirection for this command
+            int output_fd = -1;
+            if (i < num_commands - 1) {
+                // Write to next pipe
+                output_fd = pipes[i].second;
+                if (dup2(output_fd, STDOUT_FILENO) == -1) {
+                    std::cerr << "Failed to redirect stdout to pipe\n";
+                    exit(1);
+                }
+                close(pipes[i].first);
+                close(pipes[i].second);
+            }
+
+            // Execute the command (this will exit the child process)
+            executeSingleCommand(cmd.pipeline.commands[i], input_fd, output_fd);
+            exit(1); // Should never reach here if exec succeeds
+        } else {
+            // Parent process
+            pids.push_back(pid);
+
+            // Close pipe ends that are not needed in parent
+            if (i > 0) {
+                close(pipes[i-1].first);
+                close(pipes[i-1].second);
+            }
+        }
+    }
+
+    // Close remaining pipe ends in parent
+    for (auto& pipe_fds : pipes) {
+        close(pipe_fds.first);
+        close(pipe_fds.second);
+    }
+
+    // Wait for all commands in the pipeline to complete
+    int last_status = -1;
+    int exit_status = -1;
+    for (size_t i = 0; i < pids.size(); ++i) {
+        int status;
+        if (waitpid(pids[i], &status, 0) == -1) {
+            reportError("Wait failed for pipeline process " + std::to_string(i));
+            return -1;
+        }
+
+        if (i == pids.size() - 1) { // Last command
+            if (WIFEXITED(status)) {
+                exit_status = WEXITSTATUS(status);
+            } else if (WIFSIGNALED(status)) {
+                std::cerr << "Pipeline last command terminated by signal " << WTERMSIG(status) << "\n";
+                exit_status = 128 + WTERMSIG(status);
+            }
+        }
+    }
+
+    // Return exit status of the last command
+    return exit_status;
 }
 
 int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_fd) {
@@ -84,9 +188,32 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
     }
 
     if (pid == 0) { // Child process
-        // Setup redirections
-        if (!setupRedirections(cmd, input_fd, output_fd)) {
+        // Setup file redirections first (important: this sets input_fd, output_fd)
+        int file_input_fd = -1, file_output_fd = -1;
+        if (!setupRedirections(cmd, file_input_fd, file_output_fd)) {
             exit(1);
+        }
+
+        // If no file redirection, use the provided fd (from pipes)
+        if (file_input_fd == -1 && input_fd != -1) {
+            if (dup2(input_fd, STDIN_FILENO) == -1) {
+                std::cerr << "Failed to redirect stdin from pipe\n";
+                exit(1);
+            }
+            if (input_fd > 2) close(input_fd); // Don't close stdin/stdout/stderr
+        }
+
+        if (file_output_fd == -1 && output_fd != -1) {
+            if (dup2(output_fd, STDOUT_FILENO) == -1) {
+                std::cerr << "Failed to redirect stdout to pipe\n";
+                exit(1);
+            }
+            if (output_fd > 2) close(output_fd); // Don't close stdin/stdout/stderr
+        }
+
+        // Close extra file descriptors that might be from pipes
+        for (int fd = 3; fd < 1024; ++fd) {
+            close(fd);
         }
 
         // Build arguments for exec
@@ -99,7 +226,12 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
         std::cerr << "Exec failed: " << strerror(errno) << "\n";
         exit(1);
     } else { // Parent process
-        // Wait for child to complete
+        // Close the input/output fds that we provided to the child (they were duplicated)
+        if (input_fd > 2) close(input_fd);
+        if (output_fd > 2) close(output_fd);
+
+        // For single commands, wait for completion
+        // For pipeline commands, this will be handled at pipeline level
         int status;
         if (waitpid(pid, &status, 0) == -1) {
             reportError("Wait failed");
