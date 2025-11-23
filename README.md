@@ -1,4 +1,4 @@
-# Helix Shell (`hsh`)
+# Helix Shell
 
 [![CI/CD Pipeline](https://github.com/adarshanand67/Helix-Shell/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshanand67/Helix-Shell/actions/workflows/ci.yml)
 [![Code Quality](https://img.shields.io/badge/code%20quality-A+-brightgreen)](https://github.com/adarshanand67/Helix-Shell)
