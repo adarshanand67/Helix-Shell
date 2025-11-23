@@ -93,33 +93,31 @@ int Executor::execute(const ParsedCommand& cmd) {
 
         if (pid == 0) { // Child process
             // Setup input redirection for this command
-            int input_fd = -1;
             if (i > 0) {
                 // Read from previous pipe
-                input_fd = pipes[i-1].first;
-                if (dup2(input_fd, STDIN_FILENO) == -1) {
+                if (dup2(pipes[i-1].first, STDIN_FILENO) == -1) {
                     std::cerr << "Failed to redirect stdin from pipe\n";
                     exit(1);
                 }
-                close(pipes[i-1].first);
-                close(pipes[i-1].second);
             }
 
             // Setup output redirection for this command
-            int output_fd = -1;
             if (i < num_commands - 1) {
                 // Write to next pipe
-                output_fd = pipes[i].second;
-                if (dup2(output_fd, STDOUT_FILENO) == -1) {
+                if (dup2(pipes[i].second, STDOUT_FILENO) == -1) {
                     std::cerr << "Failed to redirect stdout to pipe\n";
                     exit(1);
                 }
-                close(pipes[i].first);
-                close(pipes[i].second);
             }
 
-            // Execute the command (this will exit the child process)
-            executeSingleCommand(cmd.pipeline.commands[i], input_fd, output_fd);
+            // Setup any file redirections for this command
+            int dummy_input_fd = -1, dummy_output_fd = -1;
+            if (!setupRedirections(cmd.pipeline.commands[i], dummy_input_fd, dummy_output_fd)) {
+                exit(1);
+            }
+
+            // Execute the command directly in this child process
+            executeCommandInChild(cmd.pipeline.commands[i]);
             exit(1); // Should never reach here if exec succeeds
         } else {
             // Parent process
@@ -174,17 +172,6 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
         return -1;
     }
 
-    // Find the executable
-    std::string executable = findExecutable(cmd.args[0]);
-    if (executable.empty()) {
-        std::cerr << "Command not found: " << cmd.args[0] << "\n";
-        return 127; // Command not found exit code
-    }
-
-    // Update the command path
-    std::vector<std::string> exec_args = cmd.args;
-    exec_args[0] = executable;
-
     // Fork child process
     pid_t pid = fork();
     if (pid == -1) {
@@ -216,20 +203,9 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
             if (output_fd > 2) close(output_fd); // Don't close stdin/stdout/stderr
         }
 
-        // Close extra file descriptors that might be from pipes
-        for (int fd = 3; fd < 1024; ++fd) {
-            close(fd);
-        }
-
-        // Build arguments for exec
-        std::vector<char*> argv = buildArgv(exec_args);
-
-        // Execute the command
-        execvp(executable.c_str(), &argv[0]);
-
-        // If we reach here, exec failed
-        std::cerr << "Exec failed: " << strerror(errno) << "\n";
-        exit(1);
+        // Execute the command directly in this child process
+        executeCommandInChild(cmd);
+        exit(1); // Should never reach here if exec succeeds
     } else { // Parent process
         // Close the input/output fds that we provided to the child (they were duplicated)
         if (input_fd > 2) close(input_fd);
@@ -372,6 +348,45 @@ std::vector<char*> Executor::buildArgv(const std::vector<std::string>& args) {
 
 void Executor::reportError(const std::string& message) {
     std::cerr << "Executor error: " << message << "\n";
+}
+
+void Executor::executeCommandInChild(const Command& cmd) {
+    if (cmd.args.empty()) {
+        exit(1);
+    }
+
+    // Find the executable
+    std::string executable = findExecutable(cmd.args[0]);
+    if (executable.empty()) {
+        std::cerr << "Command not found: " << cmd.args[0] << "\n";
+        exit(127); // Command not found exit code
+    }
+
+    // Update the command path
+    std::vector<std::string> exec_args = cmd.args;
+    exec_args[0] = executable;
+
+    // Close extra file descriptors that might be from pipes
+    for (int fd = 3; fd < 1024; ++fd) {
+        close(fd);
+    }
+
+    // Build arguments for exec
+    std::vector<char*> argv = buildArgv(exec_args);
+
+    // Debug: print the command being executed
+    std::cerr << "Executing: " << executable;
+    for (size_t i = 1; i < exec_args.size(); ++i) {
+        std::cerr << " '" << exec_args[i] << "'";
+    }
+    std::cerr << std::endl;
+
+    // Execute the command
+    execvp(executable.c_str(), &argv[0]);
+
+    // If we reach here, exec failed
+    std::cerr << "Exec failed: " << strerror(errno) << "\n";
+    exit(1);
 }
 
 } // namespace hshell

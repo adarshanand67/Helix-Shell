@@ -22,6 +22,9 @@ private:
     // Execute a single command (may be part of a pipeline)
     int executeSingleCommand(const Command& cmd, int input_fd = -1, int output_fd = -1);
 
+    // Execute command directly in child process (no fork, for pipelines)
+    void executeCommandInChild(const Command& cmd);
+
     // Handle redirections for a command
     bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd);
 

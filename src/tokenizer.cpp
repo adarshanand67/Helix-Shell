@@ -83,8 +83,14 @@ size_t Tokenizer::processNormalState(const std::string &input, size_t i,
   }
 
   // Check for special tokens only if this character could start one
-  if (c == '|' || c == '<' || c == '>' || c == '&' || c == ';' || c == '2' ||
-      (c == '2' && i + 1 < input.length() && input[i + 1] == '>')) {
+  if (c == '|' || c == '<' || c == '>' || c == '&' || c == ';') {
+    if (handleSpecialTokens(input, i, tokens, current)) {
+      return getTokenLength(input, i);
+    }
+  }
+
+  // Check for 2> and 2>> tokens
+  if (c == '2' && i + 1 < input.length() && input[i + 1] == '>') {
     if (handleSpecialTokens(input, i, tokens, current)) {
       return getTokenLength(input, i);
     }

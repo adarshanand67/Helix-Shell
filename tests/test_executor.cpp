@@ -233,7 +233,7 @@ public:
 
   void testAppendMode() {
     // Test append mode (>>)
-    std::string output_file = "/tmp/test_append";
+    std::string output_file = createTempFile("");
 
     // Write first line
     std::string cmd1 = "echo line1 >> " + output_file;
