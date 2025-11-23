@@ -283,12 +283,7 @@ bool Shell::processInput(const std::string& input) {
     }
 
     // Execute the command using the executor
-    int exit_status = executor.execute(parsed_cmd);
-
-    // For debugging, show exit status
-    std::cout << "Command exited with status: " << exit_status << "\n";
-
-    // Future: Execute commands here
+    last_exit_status = executor.execute(parsed_cmd);
 
     return true;
 }
