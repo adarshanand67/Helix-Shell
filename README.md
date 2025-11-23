@@ -11,7 +11,25 @@ A modern Unix shell with advanced features including autocompletion, colored pro
 
 ### Installation
 
-#### macOS (Homebrew) - Recommended
+#### Linux/macOS (Binary Installer) - Recommended
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/main/install.sh | bash
+```
+
+Or download and run manually:
+```bash
+wget -qO- https://raw.githubusercontent.com/adarshanand67/Helix-Shell/main/install.sh | bash
+```
+
+Options:
+- `-l, --local`: Install to `~/.local/bin` instead of system-wide
+- `-s, --system`: Force system installation (requires sudo)
+- `-v, --version VER`: Install specific version
+
+The installer automatically detects your platform (Linux/macOS) and architecture (x86_64/arm64).
+
+#### macOS (Homebrew)
 
 ```bash
 brew tap adarshanand67/helix-shell
