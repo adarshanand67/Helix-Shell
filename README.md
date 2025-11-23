@@ -8,6 +8,23 @@
 ### Target Platform: Unix-like Systems (Linux, macOS)
 ### Language: C++ (C++23 Standard)
 
+## System Components Diagram
+
+```mermaid
+graph TD
+    A[main.cpp] --> B[Shell Class]
+    B --> C[Tokenizer.tokenize()]
+    C --> D[Parser.parse()]
+    D --> E[Executor.execute()]
+    E --> F{Command Type?}
+    F -->|External| G[fork()]
+    G --> H[Child: execvp]
+    G --> I[Parent: waitpid]
+    F -->|Built-in| J[Shell.<builtin>]
+    I --> K[Shell.run] --> C
+    J --> K
+```
+
 ## 1. Executive Summary
 
 Helix Shell (`hsh`) is a custom command-line interpreter designed to emulate the core functionality and behavior of standard Unix shells like Bash, Zsh, or Dash. The primary objective is to construct a robust, interactive environment that serves as the vital bridge between the user and the operating system kernel, facilitating process execution, resource management, and system navigation.
