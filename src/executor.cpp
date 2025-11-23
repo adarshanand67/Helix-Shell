@@ -1,4 +1,8 @@
 #include "executor.h"
+#include "executor/executable_resolver.h"
+#include "executor/environment_expander.h"
+#include "executor/fd_manager.h"
+#include "executor/pipeline_manager.h"
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -7,11 +11,24 @@
 
 namespace helix {
 
+// Default constructor - creates standard implementations
 Executor::Executor()
     : exe_resolver(std::make_unique<ExecutableResolver>()),
       env_expander(std::make_unique<EnvironmentVariableExpander>()),
       fd_manager(std::make_unique<FileDescriptorManager>()),
       pipeline_manager(std::make_unique<PipelineManager>()) {
+}
+
+// Dependency injection constructor - allows custom implementations (for testing)
+Executor::Executor(
+    std::unique_ptr<IExecutableResolver> resolver,
+    std::unique_ptr<IEnvironmentExpander> expander,
+    std::unique_ptr<IFileDescriptorManager> fd_mgr,
+    std::unique_ptr<IPipelineManager> pipe_mgr)
+    : exe_resolver(std::move(resolver)),
+      env_expander(std::move(expander)),
+      fd_manager(std::move(fd_mgr)),
+      pipeline_manager(std::move(pipe_mgr)) {
 }
 
 Executor::~Executor() = default;

@@ -2,10 +2,7 @@
 #define HELIX_EXECUTOR_H
 
 #include "types.h"
-#include "executor/executable_resolver.h"
-#include "executor/environment_expander.h"
-#include "executor/fd_manager.h"
-#include "executor/pipeline_manager.h"
+#include "executor/interfaces.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -13,14 +10,24 @@
 namespace helix {
 
 // Command Executor - handles execution of parsed commands using composition
+// Follows Dependency Inversion Principle (depends on interfaces, not implementations)
 // Delegates specialized tasks to focused components:
-// - ExecutableResolver for PATH searching
-// - EnvironmentVariableExpander for variable substitution
-// - FileDescriptorManager for FD redirections
-// - PipelineManager for multi-command pipelines
+// - IExecutableResolver for PATH searching
+// - IEnvironmentExpander for variable substitution
+// - IFileDescriptorManager for FD redirections
+// - IPipelineManager for multi-command pipelines
 class Executor {
 public:
+    // Constructor with default implementations (can be swapped for testing)
     Executor();
+
+    // Constructor with dependency injection (for testing/flexibility)
+    Executor(
+        std::unique_ptr<IExecutableResolver> resolver,
+        std::unique_ptr<IEnvironmentExpander> expander,
+        std::unique_ptr<IFileDescriptorManager> fd_mgr,
+        std::unique_ptr<IPipelineManager> pipe_mgr);
+
     ~Executor();
 
     // Execute a parsed command (pipeline or single command)
@@ -40,11 +47,11 @@ private:
     // Error handling
     void reportError(const std::string& message);
 
-    // Component instances (composition)
-    std::unique_ptr<ExecutableResolver> exe_resolver;
-    std::unique_ptr<EnvironmentVariableExpander> env_expander;
-    std::unique_ptr<FileDescriptorManager> fd_manager;
-    std::unique_ptr<PipelineManager> pipeline_manager;
+    // Component instances (composition via interfaces - Dependency Inversion Principle)
+    std::unique_ptr<IExecutableResolver> exe_resolver;
+    std::unique_ptr<IEnvironmentExpander> env_expander;
+    std::unique_ptr<IFileDescriptorManager> fd_manager;
+    std::unique_ptr<IPipelineManager> pipeline_manager;
 };
 
 } // namespace helix

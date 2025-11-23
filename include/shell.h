@@ -54,9 +54,9 @@ private:
     // Prompt generator
     Prompt prompt;
 
-    // Component instances (composition)
-    std::unique_ptr<BuiltinCommandDispatcher> builtin_dispatcher;
-    std::unique_ptr<JobManager> job_manager;
+    // Component instances (composition via interfaces - Dependency Inversion Principle)
+    std::unique_ptr<IBuiltinDispatcher> builtin_dispatcher;
+    std::unique_ptr<IJobManager> job_manager;
 };
 
 } // namespace helix

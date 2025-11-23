@@ -46,6 +46,17 @@ mkdir build && cd build
 cmake ..
 make                   # Build the shell
 ./helix                # Run it
+```
+
+#### Linux/Debian/Ubuntu
+
+For comprehensive Linux installation and testing instructions, including:
+- Building from source on various distributions
+- Creating Debian packages
+- Setting up Ubuntu PPA
+- Docker-based testing
+
+See [docs/LINUX_TESTING.md](docs/LINUX_TESTING.md)
 ### Features
 
 - **TAB Autocompletion**: Complete commands and file paths with TAB
@@ -60,13 +71,14 @@ make                   # Build the shell
 ```mermaid
 classDiagram
 
+%% Core Data Types
 class Token {
     +TokenType type
     +std::string value
 }
 
 class Command {
-    +std::vector<std::string> args
+    +std::vector~string~ args
     +std::string input_file
     +bool append_mode
     +std::string output_file
@@ -83,7 +95,7 @@ class Job {
 }
 
 class CommandPipeline {
-    +std::vector<Command> commands
+    +std::vector~Command~ commands
     +std::string original_command
 }
 
@@ -92,91 +104,18 @@ class ParsedCommand {
     +bool background
 }
 
-class Colors {
-    <<namespace>>
-    +const std::string RESET
-    +const std::string BOLD
-    +const std::string GREEN
-    +const std::string RED
-    +const std::string YELLOW
-    +const std::string BRIGHT_BLACK
-    +const std::string BRIGHT_GREEN
-    +const std::string BRIGHT_BLUE
-    +const std::string BRIGHT_MAGENTA
-    +const std::string BRIGHT_CYAN
+class ShellState {
+    +std::string current_directory
+    +std::string home_directory
+    +int last_exit_status
+    +bool running
+    +std::vector~string~ command_history
+    +std::map~string,string~ environment
+    +IJobManager* job_manager
+    +Prompt* prompt
 }
 
-class Prompt {
-    +Prompt()
-    +setUserHost(...) void
-    +setCurrentDirectory(...) void
-    +setHomeDirectory(...) void
-    +setLastExitStatus(int) void
-    +generate() const std::string
-    -getGitBranch() const std::string
-    -shortenPath(...) const std::string
-    -std::string user_
-    -std::string host_
-    -std::string current_directory_
-    -std::string home_directory_
-    -int last_exit_status_
-}
-
-class Tokenizer {
-    +tokenize(const std::string&) std::vector<Token>
-    -processNormalState(...)
-    -processDoubleQuoteState(...)
-    -processSingleQuoteState(...)
-    -handleSpecialTokens(...)
-    -getTokenLength(...)
-}
-
-class Parser {
-    +parse(const std::vector<Token>&) ParsedCommand
-    -parseSingleCommand(...) Command
-    -parseArguments(...)
-    -parseRedirections(...)
-    -extractFilename(...) std::string
-}
-
-class Executor {
-    +Executor()
-    +~Executor()
-    +execute(const ParsedCommand&) int
-    -executeSingleCommand(...) int
-    -setupRedirections(...) bool
-    -restoreFileDescriptors(...)
-    -findExecutable(...) std::string
-    -buildArgv(...) std::vector<char*>
-    -reportError(...)
-    -int original_stdin
-    -int original_stdout
-    -int original_stderr
-}
-
-class Shell {
-    +Shell()
-    +~Shell()
-    +run() int
-    -showPrompt()
-    -readInput() std::string
-    -processInput(...) bool
-    -printJobs()
-    -bringToForeground(int)
-    -resumeInBackground(int)
-    -std::string current_directory
-    -std::string home_directory
-    -bool running
-    -int last_exit_status
-    -Tokenizer tokenizer
-    -Parser parser
-    -Executor executor
-    -Prompt prompt
-    -std::map<std::string, std::string> environment
-    -std::vector<std::string> command_history
-    -std::map<int, Job> jobs
-}
-
+%% Enumerations
 class JobStatus {
     <<enumeration>>
     RUNNING
@@ -199,21 +138,219 @@ class TokenType {
     END_OF_INPUT
 }
 
+%% Interfaces (Dependency Inversion Principle)
+class IExecutableResolver {
+    <<interface>>
+    +findExecutable(command)* string
+}
+
+class IEnvironmentExpander {
+    <<interface>>
+    +expand(input)* string
+}
+
+class IFileDescriptorManager {
+    <<interface>>
+    +setupRedirections(cmd, input_fd, output_fd)* bool
+    +restoreFileDescriptors()* void
+}
+
+class IPipelineManager {
+    <<interface>>
+    +executePipeline(cmd, executor_func)* int
+}
+
+class IBuiltinCommandHandler {
+    <<interface>>
+    +handle(cmd, state)* bool
+    +canHandle(command)* bool
+}
+
+class IBuiltinDispatcher {
+    <<interface>>
+    +dispatch(cmd, state)* bool
+    +isBuiltin(command)* bool
+}
+
+class IJobManager {
+    <<interface>>
+    +addJob(pid, command)* void
+    +removeJob(job_id)* void
+    +printJobs()* void
+    +bringToForeground(job_id)* void
+    +resumeInBackground(job_id)* void
+    +getJobs()* map~int,Job~
+}
+
+%% Concrete Executor Components
+class ExecutableResolver {
+    +findExecutable(command) string
+}
+
+class EnvironmentVariableExpander {
+    +expand(input) string
+}
+
+class FileDescriptorManager {
+    -int original_stdin
+    -int original_stdout
+    -int original_stderr
+    +setupRedirections(cmd, input_fd, output_fd) bool
+    +restoreFileDescriptors() void
+}
+
+class PipelineManager {
+    +executePipeline(cmd, executor_func) int
+    -createPipes(count) vector~pair~int,int~~
+    -cleanupPipes(pipes) void
+    -waitForPipeline(pids) int
+}
+
+%% Concrete Shell Components
+class BuiltinCommandHandler {
+    <<abstract>>
+    +handle(cmd, state)* bool
+    +canHandle(command)* bool
+}
+
+class CdCommandHandler {
+    +handle(cmd, state) bool
+    +canHandle(command) bool
+}
+
+class ExitCommandHandler {
+    +handle(cmd, state) bool
+    +canHandle(command) bool
+}
+
+class HistoryCommandHandler {
+    +handle(cmd, state) bool
+    +canHandle(command) bool
+}
+
+class JobsCommandHandler {
+    +handle(cmd, state) bool
+    +canHandle(command) bool
+}
+
+class FgCommandHandler {
+    +handle(cmd, state) bool
+    +canHandle(command) bool
+}
+
+class BgCommandHandler {
+    +handle(cmd, state) bool
+    +canHandle(command) bool
+}
+
+class BuiltinCommandDispatcher {
+    -map~string,unique_ptr~BuiltinCommandHandler~~ handlers
+    +dispatch(cmd, state) bool
+    +isBuiltin(command) bool
+}
+
+class JobManager {
+    -map~int,Job~ jobs
+    -int next_job_id
+    +addJob(pid, command) void
+    +removeJob(job_id) void
+    +printJobs() void
+    +bringToForeground(job_id) void
+    +resumeInBackground(job_id) void
+    +getJobs() map~int,Job~
+}
+
+%% Main Classes
+class Executor {
+    -unique_ptr~IExecutableResolver~ exe_resolver
+    -unique_ptr~IEnvironmentExpander~ env_expander
+    -unique_ptr~IFileDescriptorManager~ fd_manager
+    -unique_ptr~IPipelineManager~ pipeline_manager
+    +Executor()
+    +Executor(resolver, expander, fd_mgr, pipe_mgr)
+    +execute(cmd) int
+    -executeSingleCommand(cmd, input_fd, output_fd) int
+    -executeCommandInChild(cmd) void
+}
+
+class Shell {
+    -ShellState state
+    -unique_ptr~Tokenizer~ tokenizer
+    -unique_ptr~Parser~ parser
+    -unique_ptr~Executor~ executor
+    -unique_ptr~IBuiltinDispatcher~ builtin_dispatcher
+    -unique_ptr~IJobManager~ job_manager
+    +Shell()
+    +run() int
+    -showPrompt() void
+    -readInput() string
+    -processInput(input) bool
+}
+
+class Tokenizer {
+    +tokenize(input) vector~Token~
+    -processNormalState(...)
+    -processDoubleQuoteState(...)
+    -processSingleQuoteState(...)
+}
+
+class Parser {
+    +parse(tokens) ParsedCommand
+    -parseSingleCommand(...) Command
+}
+
+class Prompt {
+    +generate() string
+    +setUserHost(...) void
+    +setCurrentDirectory(...) void
+    -getGitBranch() string
+}
+
+%% Relationships - Interfaces
+IExecutableResolver <|.. ExecutableResolver : implements
+IEnvironmentExpander <|.. EnvironmentVariableExpander : implements
+IFileDescriptorManager <|.. FileDescriptorManager : implements
+IPipelineManager <|.. PipelineManager : implements
+IBuiltinCommandHandler <|.. BuiltinCommandHandler : implements
+IBuiltinDispatcher <|.. BuiltinCommandDispatcher : implements
+IJobManager <|.. JobManager : implements
+
+%% Relationships - Executor Composition (uses interfaces)
+Executor --> IExecutableResolver : depends on
+Executor --> IEnvironmentExpander : depends on
+Executor --> IFileDescriptorManager : depends on
+Executor --> IPipelineManager : depends on
+
+%% Relationships - Shell Composition (uses interfaces)
+Shell --> IBuiltinDispatcher : depends on
+Shell --> IJobManager : depends on
+Shell --> Tokenizer : uses
+Shell --> Parser : uses
+Shell --> Executor : uses
+Shell --> ShellState : has
+ShellState --> IJobManager : references
+ShellState --> Prompt : has
+
+%% Relationships - Builtin Handlers (Strategy Pattern)
+BuiltinCommandHandler <|-- CdCommandHandler : extends
+BuiltinCommandHandler <|-- ExitCommandHandler : extends
+BuiltinCommandHandler <|-- HistoryCommandHandler : extends
+BuiltinCommandHandler <|-- JobsCommandHandler : extends
+BuiltinCommandHandler <|-- FgCommandHandler : extends
+BuiltinCommandHandler <|-- BgCommandHandler : extends
+BuiltinCommandDispatcher --> BuiltinCommandHandler : manages
+
+%% Data Type Relationships
 Tokenizer ..> Token : creates
 Parser ..> ParsedCommand : creates
 Parser ..> Command : creates
 Parser ..> CommandPipeline : creates
-Shell --> Tokenizer : uses
-Shell --> Parser : uses
-Shell --> Executor : uses
-Shell --> Prompt : uses
-Shell --> Job : manages
 Executor ..> Command : executes
-Prompt ..> Colors : uses
 ParsedCommand --> CommandPipeline : contains
 CommandPipeline --> Command : contains
 Job --> JobStatus : has
 Token --> TokenType : has
+JobManager --> Job : manages
 ```
 
 ## Architecture: Composition-Based Design
@@ -298,11 +435,31 @@ The `Shell` class uses composition for:
 
 ### Design Patterns Used
 
-1. **Composition over Inheritance**: Components are composed, not inherited
-2. **Strategy Pattern**: Builtin command handlers are swappable strategies
-3. **Dependency Injection**: Components receive dependencies via constructor
-4. **Single Responsibility**: Each class has one clear purpose
-5. **RAII**: Smart pointers (`std::unique_ptr`) manage component lifetimes
+1. **Dependency Inversion Principle (DIP)**: High-level modules (Executor, Shell) depend on abstractions (interfaces), not concrete implementations
+   - All executor components implement interfaces: `IExecutableResolver`, `IEnvironmentExpander`, `IFileDescriptorManager`, `IPipelineManager`
+   - All shell components implement interfaces: `IBuiltinCommandHandler`, `IBuiltinDispatcher`, `IJobManager`
+   - Enables easy testing with mock implementations and runtime polymorphism
+
+2. **Composition over Inheritance**: Components are composed, not inherited
+   - Executor composes 4 specialized components instead of implementing all logic
+   - Shell composes state, dispatcher, and job manager components
+
+3. **Strategy Pattern**: Builtin command handlers are swappable strategies
+   - Each builtin command (`cd`, `exit`, `history`, etc.) has its own handler class
+   - `BuiltinCommandDispatcher` routes commands to appropriate strategies
+
+4. **Dependency Injection**: Components receive dependencies via constructor
+   - Executor has two constructors: default (production) and DI constructor (testing)
+   - Shell receives all components through unique pointers for testability
+
+5. **Single Responsibility Principle**: Each class has one clear purpose
+   - `ExecutableResolver`: Only finds executables in PATH
+   - `FileDescriptorManager`: Only handles FD redirections
+   - `PipelineManager`: Only manages pipeline execution
+
+6. **RAII (Resource Acquisition Is Initialization)**: Smart pointers manage component lifetimes
+   - All components use `std::unique_ptr` for automatic cleanup
+   - No manual memory management, preventing leaks
 
 ### Code Metrics
 

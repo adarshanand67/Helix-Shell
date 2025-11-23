@@ -1,19 +1,21 @@
 #ifndef HELIX_FD_MANAGER_H
 #define HELIX_FD_MANAGER_H
 
+#include "executor/interfaces.h"
 #include "types.h"
 
 namespace helix {
 
 // FileDescriptorManager - Manages file descriptor redirections
+// Implements IFileDescriptorManager interface (Dependency Inversion Principle)
 // Responsibilities:
 // - Save and restore original file descriptors
 // - Setup input/output/error redirections for commands
 // - Handle file opening with appropriate flags (append, truncate, etc.)
-class FileDescriptorManager {
+class FileDescriptorManager : public IFileDescriptorManager {
 public:
     FileDescriptorManager();
-    ~FileDescriptorManager();
+    ~FileDescriptorManager() override;
 
     // Disable copy and move to prevent FD management issues
     FileDescriptorManager(const FileDescriptorManager&) = delete;
@@ -24,10 +26,10 @@ public:
     // Setup all redirections for a command
     // Sets input_fd and output_fd if file redirections are used
     // Returns true on success, false on error
-    bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd);
+    bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd) override;
 
     // Restore original file descriptors
-    void restoreFileDescriptors();
+    void restoreFileDescriptors() override;
 
 private:
     // Setup individual redirection types

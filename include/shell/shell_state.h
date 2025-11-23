@@ -1,7 +1,6 @@
 #ifndef HELIX_SHELL_STATE_H
 #define HELIX_SHELL_STATE_H
 
-#include "shell/job_manager.h"
 #include "prompt.h"
 #include <string>
 #include <vector>
@@ -9,8 +8,9 @@
 
 namespace helix {
 
-// Forward declaration
-class JobManager;
+// Forward declarations
+class IJobManager;
+class Prompt;
 
 // ShellState - Encapsulates all shell state
 // Responsibilities:
@@ -29,8 +29,8 @@ struct ShellState {
     std::vector<std::string> command_history;
     std::map<std::string, std::string> environment;
 
-    // Job management
-    JobManager* job_manager = nullptr;
+    // Job management (uses interface - Dependency Inversion Principle)
+    IJobManager* job_manager = nullptr;
 
     // Prompt
     Prompt* prompt = nullptr;

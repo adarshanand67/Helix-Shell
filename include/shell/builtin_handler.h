@@ -1,6 +1,7 @@
 #ifndef HELIX_BUILTIN_HANDLER_H
 #define HELIX_BUILTIN_HANDLER_H
 
+#include "shell/interfaces.h"
 #include "types.h"
 #include "shell/shell_state.h"
 #include <string>
@@ -13,17 +14,18 @@ namespace helix {
 struct ShellState;
 
 // BuiltinCommandHandler - Base class for all built-in command handlers
+// Implements IBuiltinCommandHandler interface (Dependency Inversion Principle)
 // Uses Strategy pattern to allow different implementations for each builtin
-class BuiltinCommandHandler {
+class BuiltinCommandHandler : public IBuiltinCommandHandler {
 public:
     virtual ~BuiltinCommandHandler() = default;
 
     // Handle a command
     // Returns true on success, false on error
-    virtual bool handle(const ParsedCommand& cmd, ShellState& state) = 0;
+    virtual bool handle(const ParsedCommand& cmd, ShellState& state) override = 0;
 
     // Check if this handler can handle the given command
-    virtual bool canHandle(const std::string& command) const = 0;
+    virtual bool canHandle(const std::string& command) const override = 0;
 };
 
 // CdCommandHandler - Handles 'cd' command
@@ -69,17 +71,18 @@ public:
 };
 
 // BuiltinCommandDispatcher - Dispatches commands to appropriate handlers
-class BuiltinCommandDispatcher {
+// Implements IBuiltinDispatcher interface (Dependency Inversion Principle)
+class BuiltinCommandDispatcher : public IBuiltinDispatcher {
 public:
     BuiltinCommandDispatcher();
-    ~BuiltinCommandDispatcher() = default;
+    ~BuiltinCommandDispatcher() override = default;
 
     // Dispatch command to appropriate handler
     // Returns true if command was handled, false otherwise
-    bool dispatch(const ParsedCommand& cmd, ShellState& state);
+    bool dispatch(const ParsedCommand& cmd, ShellState& state) override;
 
     // Check if a command is a builtin
-    bool isBuiltin(const std::string& command) const;
+    bool isBuiltin(const std::string& command) const override;
 
 private:
     std::map<std::string, std::unique_ptr<BuiltinCommandHandler>> handlers;

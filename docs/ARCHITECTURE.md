@@ -24,6 +24,73 @@ Each class has a single, well-defined responsibility:
 - **FileDescriptorManager**: Only FD redirection management
 - **PipelineManager**: Only pipeline coordination
 
+### Dependency Inversion Principle (DIP)
+
+HelixShell v2.0 implements the **Dependency Inversion Principle**, where high-level modules depend on abstractions (interfaces) rather than concrete implementations.
+
+**Core Principle:**
+> "High-level modules should not depend on low-level modules. Both should depend on abstractions."
+
+**Implementation:**
+
+**Executor Interfaces (`include/executor/interfaces.h`):**
+- `IExecutableResolver`: Abstract interface for executable resolution
+- `IEnvironmentExpander`: Abstract interface for environment variable expansion
+- `IFileDescriptorManager`: Abstract interface for FD management
+- `IPipelineManager`: Abstract interface for pipeline execution
+
+**Shell Interfaces (`include/shell/interfaces.h`):**
+- `IBuiltinCommandHandler`: Abstract interface for builtin command handlers
+- `IBuiltinDispatcher`: Abstract interface for builtin command dispatching
+- `IJobManager`: Abstract interface for job control
+
+**Benefits:**
+- **Testability**: Easy to inject mock implementations for unit testing
+- **Flexibility**: Can swap implementations without changing high-level code
+- **Decoupling**: High-level logic independent of low-level details
+- **Runtime Polymorphism**: Different implementations can be used dynamically
+
+**Example - Executor with Dependency Injection:**
+```cpp
+// Default constructor for production use
+Executor::Executor()
+    : exe_resolver(std::make_unique<ExecutableResolver>()),
+      env_expander(std::make_unique<EnvironmentVariableExpander>()),
+      fd_manager(std::make_unique<FileDescriptorManager>()),
+      pipeline_manager(std::make_unique<PipelineManager>()) {}
+
+// DI constructor for testing with mocks
+Executor::Executor(
+    std::unique_ptr<IExecutableResolver> resolver,
+    std::unique_ptr<IEnvironmentExpander> expander,
+    std::unique_ptr<IFileDescriptorManager> fd_mgr,
+    std::unique_ptr<IPipelineManager> pipe_mgr)
+    : exe_resolver(std::move(resolver)),
+      env_expander(std::move(expander)),
+      fd_manager(std::move(fd_mgr)),
+      pipeline_manager(std::move(pipe_mgr)) {}
+```
+
+**Testing Example:**
+```cpp
+// Create mock implementations
+auto mock_resolver = std::make_unique<MockExecutableResolver>();
+auto mock_expander = std::make_unique<MockEnvironmentExpander>();
+auto mock_fd_mgr = std::make_unique<MockFileDescriptorManager>();
+auto mock_pipe_mgr = std::make_unique<MockPipelineManager>();
+
+// Inject mocks into Executor
+Executor executor(
+    std::move(mock_resolver),
+    std::move(mock_expander),
+    std::move(mock_fd_mgr),
+    std::move(mock_pipe_mgr)
+);
+
+// Test without touching real filesystem or forking processes
+executor.execute(test_command);
+```
+
 ## Component Architecture
 
 ### Directory Structure
@@ -87,11 +154,19 @@ HelixShell/
 
 **Responsibility:** Locate executables in the system PATH
 
+**Interface:** Implements `IExecutableResolver`
+
 **Public Interface:**
 ```cpp
-class ExecutableResolver {
+class IExecutableResolver {
 public:
-    std::string findExecutable(const std::string& command) const;
+    virtual ~IExecutableResolver() = default;
+    virtual std::string findExecutable(const std::string& command) const = 0;
+};
+
+class ExecutableResolver : public IExecutableResolver {
+public:
+    std::string findExecutable(const std::string& command) const override;
 private:
     bool isExecutable(const std::string& path) const;
     std::string searchInPath(const std::string& command) const;
@@ -114,11 +189,19 @@ private:
 
 **Responsibility:** Expand `$VAR` and `${VAR}` syntax
 
+**Interface:** Implements `IEnvironmentExpander`
+
 **Public Interface:**
 ```cpp
-class EnvironmentVariableExpander {
+class IEnvironmentExpander {
 public:
-    std::string expand(const std::string& input) const;
+    virtual ~IEnvironmentExpander() = default;
+    virtual std::string expand(const std::string& input) const = 0;
+};
+
+class EnvironmentVariableExpander : public IEnvironmentExpander {
+public:
+    std::string expand(const std::string& input) const override;
 private:
     std::string getVariableValue(const std::string& name) const;
 };
@@ -136,15 +219,24 @@ private:
 
 **Responsibility:** Manage file descriptor redirections
 
+**Interface:** Implements `IFileDescriptorManager`
+
 **Public Interface:**
 ```cpp
-class FileDescriptorManager {
+class IFileDescriptorManager {
+public:
+    virtual ~IFileDescriptorManager() = default;
+    virtual bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd) = 0;
+    virtual void restoreFileDescriptors() = 0;
+};
+
+class FileDescriptorManager : public IFileDescriptorManager {
 public:
     FileDescriptorManager();  // Saves original FDs
-    ~FileDescriptorManager(); // Restores original FDs
+    ~FileDescriptorManager() override; // Restores original FDs
 
-    bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd);
-    void restoreFileDescriptors();
+    bool setupRedirections(const Command& cmd, int& input_fd, int& output_fd) override;
+    void restoreFileDescriptors() override;
 private:
     bool setupInputRedirection(const Command& cmd, int& input_fd);
     bool setupOutputRedirection(const Command& cmd, int& output_fd);
@@ -169,13 +261,23 @@ private:
 
 **Responsibility:** Execute multi-command pipelines
 
+**Interface:** Implements `IPipelineManager`
+
 **Public Interface:**
 ```cpp
-class PipelineManager {
+class IPipelineManager {
+public:
+    virtual ~IPipelineManager() = default;
+    virtual int executePipeline(
+        const ParsedCommand& cmd,
+        std::function<void(const Command&)> executor_func) = 0;
+};
+
+class PipelineManager : public IPipelineManager {
 public:
     int executePipeline(
         const ParsedCommand& cmd,
-        std::function<void(const Command&)> executor_func);
+        std::function<void(const Command&)> executor_func) override;
 private:
     std::vector<std::pair<int, int>> createPipes(size_t count);
     void cleanupPipes(std::vector<std::pair<int, int>>& pipes);
@@ -205,14 +307,28 @@ private:
 
 ### Main Executor
 
-**Composition:**
+**Dependency Inversion:**
+Executor depends on **interfaces**, not concrete implementations:
+
 ```cpp
 class Executor {
 private:
-    std::unique_ptr<ExecutableResolver> exe_resolver;
-    std::unique_ptr<EnvironmentVariableExpander> env_expander;
-    std::unique_ptr<FileDescriptorManager> fd_manager;
-    std::unique_ptr<PipelineManager> pipeline_manager;
+    // Depend on abstractions (interfaces)
+    std::unique_ptr<IExecutableResolver> exe_resolver;
+    std::unique_ptr<IEnvironmentExpander> env_expander;
+    std::unique_ptr<IFileDescriptorManager> fd_manager;
+    std::unique_ptr<IPipelineManager> pipeline_manager;
+
+public:
+    // Default constructor (production)
+    Executor();
+
+    // Dependency Injection constructor (testing)
+    Executor(
+        std::unique_ptr<IExecutableResolver> resolver,
+        std::unique_ptr<IEnvironmentExpander> expander,
+        std::unique_ptr<IFileDescriptorManager> fd_mgr,
+        std::unique_ptr<IPipelineManager> pipe_mgr);
 };
 ```
 
@@ -275,7 +391,8 @@ struct ShellState {
     std::vector<std::string> command_history;
     std::map<std::string, std::string> environment;
 
-    JobManager* job_manager = nullptr;
+    // Depends on interface, not concrete type
+    IJobManager* job_manager = nullptr;
     Prompt* prompt = nullptr;
 };
 ```
@@ -290,13 +407,22 @@ struct ShellState {
 
 **Responsibility:** Implement builtin commands using Strategy pattern
 
-**Interface:**
+**Interface:** Implements `IBuiltinCommandHandler`
+
+**Interface Definition:**
 ```cpp
-class BuiltinCommandHandler {
+class IBuiltinCommandHandler {
 public:
-    virtual ~BuiltinCommandHandler() = default;
+    virtual ~IBuiltinCommandHandler() = default;
     virtual bool handle(const ParsedCommand& cmd, ShellState& state) = 0;
     virtual bool canHandle(const std::string& command) const = 0;
+};
+
+class BuiltinCommandHandler : public IBuiltinCommandHandler {
+public:
+    virtual ~BuiltinCommandHandler() = default;
+    virtual bool handle(const ParsedCommand& cmd, ShellState& state) override = 0;
+    virtual bool canHandle(const std::string& command) const override = 0;
 };
 ```
 
@@ -308,12 +434,20 @@ public:
 - `FgCommandHandler`: Brings job to foreground
 - `BgCommandHandler`: Resumes job in background
 
-**Dispatcher:**
+**Dispatcher:** Implements `IBuiltinDispatcher`
+
 ```cpp
-class BuiltinCommandDispatcher {
+class IBuiltinDispatcher {
 public:
-    bool dispatch(const ParsedCommand& cmd, ShellState& state);
-    bool isBuiltin(const std::string& command) const;
+    virtual ~IBuiltinDispatcher() = default;
+    virtual bool dispatch(const ParsedCommand& cmd, ShellState& state) = 0;
+    virtual bool isBuiltin(const std::string& command) const = 0;
+};
+
+class BuiltinCommandDispatcher : public IBuiltinDispatcher {
+public:
+    bool dispatch(const ParsedCommand& cmd, ShellState& state) override;
+    bool isBuiltin(const std::string& command) const override;
 private:
     std::map<std::string, std::unique_ptr<BuiltinCommandHandler>> handlers;
 };
@@ -329,16 +463,29 @@ private:
 
 **Responsibility:** Manage background and foreground jobs
 
+**Interface:** Implements `IJobManager`
+
 **Public Interface:**
 ```cpp
-class JobManager {
+class IJobManager {
 public:
-    void addJob(int pid, const std::string& command);
-    void removeJob(int job_id);
-    void printJobs() const;
-    void bringToForeground(int job_id);
-    void resumeInBackground(int job_id);
-    const std::map<int, Job>& getJobs() const;
+    virtual ~IJobManager() = default;
+    virtual void addJob(int pid, const std::string& command) = 0;
+    virtual void removeJob(int job_id) = 0;
+    virtual void printJobs() const = 0;
+    virtual void bringToForeground(int job_id) = 0;
+    virtual void resumeInBackground(int job_id) = 0;
+    virtual const std::map<int, Job>& getJobs() const = 0;
+};
+
+class JobManager : public IJobManager {
+public:
+    void addJob(int pid, const std::string& command) override;
+    void removeJob(int job_id) override;
+    void printJobs() const override;
+    void bringToForeground(int job_id) override;
+    void resumeInBackground(int job_id) override;
+    const std::map<int, Job>& getJobs() const override;
 private:
     std::map<int, Job> jobs;
     int next_job_id = 1;
@@ -353,19 +500,22 @@ private:
 
 ### Main Shell
 
-**Composition:**
+**Dependency Inversion:**
+Shell depends on **interfaces** for extensible components:
+
 ```cpp
 class Shell {
 private:
     ShellState state;
 
-    Tokenizer tokenizer;
-    Parser parser;
-    Executor executor;
-    Prompt prompt;
+    // Core components (stable implementations)
+    std::unique_ptr<Tokenizer> tokenizer;
+    std::unique_ptr<Parser> parser;
+    std::unique_ptr<Executor> executor;
 
-    std::unique_ptr<BuiltinCommandDispatcher> builtin_dispatcher;
-    std::unique_ptr<JobManager> job_manager;
+    // Depends on abstractions (interfaces) for flexibility
+    std::unique_ptr<IBuiltinDispatcher> builtin_dispatcher;
+    std::unique_ptr<IJobManager> job_manager;
 };
 ```
 
@@ -382,35 +532,57 @@ private:
 
 ## Design Patterns
 
-### 1. Composition Pattern
+### 1. Dependency Inversion Principle (DIP)
+
+**Where:** Executor, Shell, all major components
+**Why:** High-level modules should depend on abstractions, not concrete implementations
+**Implementation:**
+- All executor components define interfaces (`IExecutableResolver`, `IEnvironmentExpander`, etc.)
+- All shell components define interfaces (`IBuiltinCommandHandler`, `IBuiltinDispatcher`, `IJobManager`)
+- Main classes (Executor, Shell) depend on these interfaces
+**Benefit:**
+- Easy to test with mock implementations
+- Can swap implementations at runtime
+- Decouples high-level logic from low-level details
+- Production-ready architecture supporting multiple implementations
+
+### 2. Composition Pattern
 
 **Where:** Executor, Shell
 **Why:** Delegate responsibilities to specialized components
-**Benefit:** Reduced coupling, easier testing
+**Benefit:** Reduced coupling, easier testing, single responsibility adherence
 
-### 2. Strategy Pattern
+### 3. Strategy Pattern
 
 **Where:** BuiltinCommandHandler hierarchy
-**Why:** Extensible builtin command system
-**Benefit:** Add new commands without modifying Shell
+**Why:** Extensible builtin command system with swappable strategies
+**Benefit:** Add new commands without modifying Shell, follows Open/Closed Principle
 
-### 3. Dependency Injection
+### 4. Dependency Injection
 
-**Where:** Constructor injection of components
+**Where:** Constructor injection of components (Executor has two constructors)
 **Why:** Explicit dependencies, easier to mock for testing
-**Benefit:** Better testability, clearer component relationships
+**Implementation:**
+```cpp
+// Production: default implementations
+Executor executor;
 
-### 4. RAII (Resource Acquisition Is Initialization)
+// Testing: inject mocks
+Executor executor(mock_resolver, mock_expander, mock_fd_mgr, mock_pipe_mgr);
+```
+**Benefit:** Better testability, clearer component relationships, inversion of control
 
-**Where:** FileDescriptorManager, smart pointers
-**Why:** Automatic resource cleanup
-**Benefit:** Exception safety, no resource leaks
+### 5. RAII (Resource Acquisition Is Initialization)
 
-### 5. Facade Pattern
+**Where:** FileDescriptorManager, smart pointers (`std::unique_ptr`)
+**Why:** Automatic resource cleanup, exception safety
+**Benefit:** No resource leaks, automatic cleanup on scope exit
+
+### 6. Facade Pattern
 
 **Where:** Executor, Shell public interfaces
-**Why:** Hide internal complexity
-**Benefit:** Simple public API, complex internal implementation
+**Why:** Hide internal complexity behind simple interfaces
+**Benefit:** Simple public API (execute, run), complex internal implementation (composition)
 
 ## Testing Strategy
 
