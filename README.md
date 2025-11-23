@@ -1,4 +1,4 @@
-# Custom Shell (Helix Shell - hsh)
+# Helix Shell (hsh)
 
 ## Product Requirements Document (PRD)
 
