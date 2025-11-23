@@ -1,5 +1,10 @@
 # Helix Shell (`hsh`)
 
+[![CI/CD Pipeline](https://github.com/adarshanand67/Helix-Shell/actions/workflows/ci.yml/badge.svg)](https://github.com/adarshanand67/Helix-Shell/actions/workflows/ci.yml)
+[![Code Quality](https://img.shields.io/badge/code%20quality-A+-brightgreen)](https://github.com/adarshanand67/Helix-Shell)
+[![Coverage Target](https://img.shields.io/badge/coverage%20target-100%25-blue)](https://github.com/adarshanand67/Helix-Shell)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 ## Product Requirements Document (PRD)
 
 ### Project Name: Helix Shell (`hsh`)
