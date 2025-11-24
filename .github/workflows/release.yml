@@ -71,18 +71,28 @@ jobs:
 
           ## Installation
 
-          ### macOS
+          ### macOS (ARM64)
+          \`\`\`bash
+          curl -LO https://github.com/adarshanand67/Helix-Shell/releases/download/${VERSION}/helix-${VERSION}-macos-arm64.tar.gz
+          tar xzf helix-${VERSION}-macos-arm64.tar.gz
+          sudo mv helix /usr/local/bin/
+          \`\`\`
+
+          Or via Homebrew:
           \`\`\`bash
           brew tap adarshanand67/helix-shell
           brew install helix-shell
           \`\`\`
 
-          ### Linux (Debian/Ubuntu)
+          ### Linux (x86_64)
           \`\`\`bash
           curl -LO https://github.com/adarshanand67/Helix-Shell/releases/download/${VERSION}/helix-${VERSION}-linux-x86_64.tar.gz
           tar xzf helix-${VERSION}-linux-x86_64.tar.gz
           sudo mv helix /usr/local/bin/
           \`\`\`
+
+          ### Windows (x86_64)
+          Download \`helix-${VERSION}-windows-x86_64.zip\` and extract to your PATH.
 
           ### Docker
           \`\`\`bash
@@ -128,6 +138,7 @@ jobs:
           VERSION="${{ needs.create-release.outputs.version }}"
           mkdir -p release
           cp build/helix release/
+          chmod +x release/helix
           cd release
           tar -czf helix-${VERSION}-linux-x86_64.tar.gz helix
 
@@ -142,7 +153,7 @@ jobs:
           asset_content_type: application/gzip
 
   build-macos:
-    name: Build macOS (Universal)
+    name: Build macOS (ARM64)
     needs: create-release
     runs-on: macos-latest
     steps:
@@ -153,28 +164,20 @@ jobs:
         run: |
           brew install cmake cppunit
 
-      - name: Build ARM64
+      - name: Build
         run: |
-          mkdir build-arm64 && cd build-arm64
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 ..
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
           make -j$(sysctl -n hw.ncpu)
-          cd ..
 
-      - name: Build x86_64
-        run: |
-          mkdir build-x86_64 && cd build-x86_64
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
-          make -j$(sysctl -n hw.ncpu)
-          cd ..
-
-      - name: Create Universal Binary
+      - name: Create archive
         run: |
           VERSION="${{ needs.create-release.outputs.version }}"
           mkdir -p release
-          lipo -create build-arm64/helix build-x86_64/helix -output release/helix
+          cp build/helix release/
           chmod +x release/helix
           cd release
-          tar -czf helix-${VERSION}-macos-universal.tar.gz helix
+          tar -czf helix-${VERSION}-macos-arm64.tar.gz helix
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
@@ -182,41 +185,45 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-macos-universal.tar.gz
-          asset_name: helix-${{ needs.create-release.outputs.version }}-macos-universal.tar.gz
+          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
+          asset_name: helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
           asset_content_type: application/gzip
 
   build-windows:
     name: Build Windows (x86_64)
     needs: create-release
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v1.1
-
-      - name: Install dependencies (vcpkg)
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git
-          cd vcpkg
-          .\bootstrap-vcpkg.bat
-          .\vcpkg install cppunit:x64-windows
-          cd ..
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-cppunit
+            make
 
       - name: Build
         run: |
-          mkdir build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ..
-          cmake --build . --config Release
+          mkdir build && cd build
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
+          ninja
 
       - name: Create archive
+        shell: pwsh
         run: |
           $VERSION = "${{ needs.create-release.outputs.version }}"
-          mkdir release
-          cp build/Release/helix.exe release/
+          New-Item -ItemType Directory -Force -Path release
+          Copy-Item build/helix.exe release/
           cd release
           Compress-Archive -Path helix.exe -DestinationPath "helix-$VERSION-windows-x86_64.zip"
 
