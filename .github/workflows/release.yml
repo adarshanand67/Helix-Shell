@@ -11,6 +11,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+  discussions: write
+
 jobs:
   create-release:
     name: Create Release
