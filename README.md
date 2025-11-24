@@ -869,6 +869,9 @@ make test
 - ✅ **Background Jobs**: `&` operator implemented - processes run in background without blocking shell
 - ✅ **SIGCHLD Signal Handling**: Automatic background job completion tracking with signal-safe implementation
 - ✅ **Job Status Notifications**: Background jobs print "Done" or "Terminated" notifications when complete
+- ✅ **Job Control**: Full `fg` and `bg` command support with process group management (tcsetpgrp, SIGCONT)
+  - `fg <job_id>` - Bring background job to foreground and wait for completion
+  - `bg <job_id>` - Resume stopped job in background
+  - Proper terminal control handoff and signal handling
 - ✅ **`pwd` built-in**: Print working directory
 - ✅ **`export` built-in**: Set environment variables for child processes
-- ⚠️  **Job Control**: `fg`, `bg` commands are placeholders (need process group management with setpgid/tcsetpgrp)

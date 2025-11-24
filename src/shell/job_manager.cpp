@@ -2,6 +2,9 @@
 #include <iostream>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <csignal>
+#include <cerrno>
+#include <cstring>
 
 namespace helix {
 
@@ -35,8 +38,51 @@ void JobManager::bringToForeground(int job_id) {
         std::cerr << "fg: job " << job_id << " not found\n";
         return;
     }
-    // Placeholder for now - full implementation needs tcsetpgrp and SIGCONT
-    std::cout << "Bringing job " << job_id << " to foreground\n";
+
+    Job& job = it->second;
+    std::cout << job.command << "\n";
+
+    // Give terminal control to the job's process group
+    if (tcsetpgrp(STDIN_FILENO, job.pgid) == -1) {
+        std::cerr << "fg: failed to give terminal control to job\n";
+        return;
+    }
+
+    // If the job was stopped, send SIGCONT to resume it
+    if (job.status == JobStatus::STOPPED) {
+        if (kill(-job.pgid, SIGCONT) == -1) {
+            std::cerr << "fg: failed to resume job\n";
+            return;
+        }
+    }
+
+    // Update job status to running
+    job.status = JobStatus::RUNNING;
+
+    // Wait for the job to complete or be stopped
+    int status;
+    pid_t result;
+    do {
+        result = waitpid(-job.pgid, &status, WUNTRACED);
+    } while (result == -1 && errno == EINTR);
+
+    // Restore terminal control to the shell
+    pid_t shell_pgid = getpgrp();
+    tcsetpgrp(STDIN_FILENO, shell_pgid);
+
+    // Update job status based on how it terminated
+    if (result > 0) {
+        if (WIFSTOPPED(status)) {
+            // Job was stopped (Ctrl+Z)
+            job.status = JobStatus::STOPPED;
+            std::cout << "\n[" << job.job_id << "] Stopped " << job.command << "\n";
+        } else if (WIFEXITED(status) || WIFSIGNALED(status)) {
+            // Job completed or was terminated
+            job.status = WIFEXITED(status) ? JobStatus::DONE : JobStatus::TERMINATED;
+            // Remove completed job
+            jobs.erase(it);
+        }
+    }
 }
 
 void JobManager::resumeInBackground(int job_id) {
@@ -45,8 +91,24 @@ void JobManager::resumeInBackground(int job_id) {
         std::cerr << "bg: job " << job_id << " not found\n";
         return;
     }
-    // Placeholder for now - full implementation needs SIGCONT
-    std::cout << "Resuming job " << job_id << " in background\n";
+
+    Job& job = it->second;
+
+    // Only resume if the job is stopped
+    if (job.status != JobStatus::STOPPED) {
+        std::cerr << "bg: job " << job_id << " is not stopped\n";
+        return;
+    }
+
+    // Send SIGCONT to resume the job in the background
+    if (kill(-job.pgid, SIGCONT) == -1) {
+        std::cerr << "bg: failed to resume job: " << strerror(errno) << "\n";
+        return;
+    }
+
+    // Update job status to running
+    job.status = JobStatus::RUNNING;
+    std::cout << "[" << job.job_id << "] " << job.command << " &\n";
 }
 
 void JobManager::updateJobStatus(pid_t pid, JobStatus status) {
