@@ -127,7 +127,10 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
 
         // Handle background vs foreground execution
         if (background) {
-            // For background jobs, don't wait - just save the PID
+            // For background jobs, create a new process group and don't wait
+            if (setpgid(pid, 0) == -1) {
+                std::cerr << "Warning: Failed to create process group for background job\n";
+            }
             last_background_pid = pid;
             std::cout << "[Background job started with PID " << pid << "]\n";
             return 0;

@@ -1,5 +1,3 @@
-Additional distribution channels for a C++ CLI tool, grouped by type:
-
 Native package managers
 • Linux: apt (Debian or Ubuntu PPA), dnf/rpm (Fedora, RHEL, CentOS), pacman (Arch AUR), zypper (openSUSE)
 • Windows: Winget, Chocolatey, Scoop
@@ -17,7 +15,7 @@ Container and cloud registries
 • GitLab Container Registry
 • Amazon ECR Public
 • Google Artifact Registry
-• Docker Hub (you already did)
+• Docker Hub (already done)
 • OCI images via distribution-based registries (Harbor, Quay)
 
 Developer ecosystems
