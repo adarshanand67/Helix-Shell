@@ -91,8 +91,8 @@ jobs:
           sudo mv helix /usr/local/bin/
           \`\`\`
 
-          ### Windows (x86_64)
-          Download \`helix-${VERSION}-windows-x86_64.zip\` and extract to your PATH.
+          ### Windows
+          Helix Shell is a POSIX-compliant shell. Windows users can run it via WSL (Windows Subsystem for Linux).
 
           ### Docker
           \`\`\`bash
@@ -188,52 +188,3 @@ jobs:
           asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
           asset_name: helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
           asset_content_type: application/gzip
-
-  build-windows:
-    name: Build Windows (x86_64)
-    needs: create-release
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-cppunit
-            mingw-w64-x86_64-readline
-            make
-
-      - name: Build
-        run: |
-          mkdir build && cd build
-          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-          ninja
-
-      - name: Create archive
-        shell: pwsh
-        run: |
-          $VERSION = "${{ needs.create-release.outputs.version }}"
-          New-Item -ItemType Directory -Force -Path release
-          Copy-Item build/helix.exe release/
-          cd release
-          Compress-Archive -Path helix.exe -DestinationPath "helix-$VERSION-windows-x86_64.zip"
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-windows-x86_64.zip
-          asset_name: helix-${{ needs.create-release.outputs.version }}-windows-x86_64.zip
-          asset_content_type: application/zip
