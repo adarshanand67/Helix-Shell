@@ -1,0 +1,227 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags like v1.0.0
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 ${VERSION}^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            CHANGELOG="Initial release"
+          else
+            CHANGELOG=$(git log --oneline --pretty=format:"- %s" ${PREV_TAG}..${VERSION})
+          fi
+
+          cat > release-notes.md <<EOF
+          # Helix Shell ${VERSION}
+
+          ## What's Changed
+
+          ${CHANGELOG}
+
+          ## Features
+
+          - ✅ Full REPL with readline support
+          - ✅ Job control with fg/bg/jobs commands
+          - ✅ SIGCHLD signal handling for background jobs
+          - ✅ Pipeline support with multiple stages
+          - ✅ I/O redirection (<, >, >>, 2>, 2>>)
+          - ✅ Built-in commands (cd, pwd, export, history, exit)
+          - ✅ Tab autocompletion for commands and paths
+          - ✅ Colored prompt with Git integration
+
+          ## Installation
+
+          ### macOS
+          \`\`\`bash
+          brew tap adarshanand67/helix-shell
+          brew install helix-shell
+          \`\`\`
+
+          ### Linux (Debian/Ubuntu)
+          \`\`\`bash
+          curl -LO https://github.com/adarshanand67/Helix-Shell/releases/download/${VERSION}/helix-${VERSION}-linux-x86_64.tar.gz
+          tar xzf helix-${VERSION}-linux-x86_64.tar.gz
+          sudo mv helix /usr/local/bin/
+          \`\`\`
+
+          ### Docker
+          \`\`\`bash
+          docker pull adarshanand67/helixshell:${VERSION}
+          \`\`\`
+
+          **Full Changelog**: https://github.com/adarshanand67/Helix-Shell/compare/${PREV_TAG}...${VERSION}
+          EOF
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Helix Shell ${{ steps.get_version.outputs.version }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+
+  build-linux:
+    name: Build Linux (x86_64)
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libreadline-dev libcppunit-dev
+
+      - name: Build
+        run: |
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          make -j$(nproc)
+
+      - name: Create archive
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          mkdir -p release
+          cp build/helix release/
+          cd release
+          tar -czf helix-${VERSION}-linux-x86_64.tar.gz helix
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-linux-x86_64.tar.gz
+          asset_name: helix-${{ needs.create-release.outputs.version }}-linux-x86_64.tar.gz
+          asset_content_type: application/gzip
+
+  build-macos:
+    name: Build macOS (Universal)
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install cmake cppunit
+
+      - name: Build ARM64
+        run: |
+          mkdir build-arm64 && cd build-arm64
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 ..
+          make -j$(sysctl -n hw.ncpu)
+          cd ..
+
+      - name: Build x86_64
+        run: |
+          mkdir build-x86_64 && cd build-x86_64
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
+          make -j$(sysctl -n hw.ncpu)
+          cd ..
+
+      - name: Create Universal Binary
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          mkdir -p release
+          lipo -create build-arm64/helix build-x86_64/helix -output release/helix
+          chmod +x release/helix
+          cd release
+          tar -czf helix-${VERSION}-macos-universal.tar.gz helix
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-macos-universal.tar.gz
+          asset_name: helix-${{ needs.create-release.outputs.version }}-macos-universal.tar.gz
+          asset_content_type: application/gzip
+
+  build-windows:
+    name: Build Windows (x86_64)
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1.1
+
+      - name: Install dependencies (vcpkg)
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          cd vcpkg
+          .\bootstrap-vcpkg.bat
+          .\vcpkg install cppunit:x64-windows
+          cd ..
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ..
+          cmake --build . --config Release
+
+      - name: Create archive
+        run: |
+          $VERSION = "${{ needs.create-release.outputs.version }}"
+          mkdir release
+          cp build/Release/helix.exe release/
+          cd release
+          Compress-Archive -Path helix.exe -DestinationPath "helix-$VERSION-windows-x86_64.zip"
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-windows-x86_64.zip
+          asset_name: helix-${{ needs.create-release.outputs.version }}-windows-x86_64.zip
+          asset_content_type: application/zip
