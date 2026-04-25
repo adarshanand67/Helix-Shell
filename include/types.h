@@ -23,6 +23,13 @@ struct Command {
     bool append_mode = false;       // True if using >> (append), false if > (overwrite)
     std::string error_file;         // Error redirection file (2>)
     bool error_append_mode = false; // True if using 2>> (append error)
+    bool stderr_to_stdout = false;  // True if 2>&1
+    bool both_to_file = false;      // True if &> or &>>
+    bool both_append = false;       // True if &>>
+    std::string heredoc_delim;      // Here-doc delimiter (if used)
+    std::string heredoc_content;    // Accumulated here-doc content
+    bool heredoc_strip = false;     // True if <<-
+    std::string herestring;         // Here-string content <<<
     bool background = false;        // True if command should run in background (&)
 };
 
@@ -50,14 +57,21 @@ struct ParsedCommand {
 enum class TokenType {
     WORD,
     PIPE,
-    REDIRECT_IN,       // <
-    REDIRECT_OUT,      // >
-    REDIRECT_OUT_APPEND, // >>
-    REDIRECT_ERR,      // 2>
-    REDIRECT_ERR_APPEND, // 2>>
-    BACKGROUND,        // &
-    SEMICOLON,         // ;
-    END_OF_INPUT       // End of input marker
+    REDIRECT_IN,          // <
+    REDIRECT_OUT,         // >
+    REDIRECT_OUT_APPEND,  // >>
+    REDIRECT_ERR,         // 2>
+    REDIRECT_ERR_APPEND,  // 2>>
+    REDIRECT_ERR_TO_OUT,  // 2>&1
+    REDIRECT_BOTH,        // &>
+    REDIRECT_BOTH_APPEND, // &>>
+    HEREDOC,              // <<
+    HEREDOC_STRIP,        // <<-
+    HERESTRING,           // <<<
+    BACKGROUND,           // &
+    SEMICOLON,            // ;
+    NEWLINE,              // newline inside multi-line input
+    END_OF_INPUT          // End of input marker
 };
 
 // Token structure

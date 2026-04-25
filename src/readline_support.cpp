@@ -23,7 +23,13 @@ void ReadlineSupport::initialize() {
     rl_attempted_completion_function = completion_function;
 
     // Set default commands (built-ins)
-    available_commands = {"cd", "pwd", "exit", "history", "jobs", "fg", "bg", "help"};
+    available_commands = {
+        "cd", "pwd", "echo", "export", "unset",
+        "alias", "unalias", "type", "which", "source",
+        "history", "jobs", "fg", "bg",
+        "read", "pushd", "popd", "dirs", "wait",
+        "true", "false", "exit", "help", "ai"
+    };
 
     // Enable tab completion
     rl_bind_key('\t', rl_complete);

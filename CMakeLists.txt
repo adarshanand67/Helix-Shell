@@ -61,6 +61,7 @@ set(CORE_SOURCES
     src/executor.cpp
     src/readline_support.cpp
     src/prompt.cpp
+    src/ai_provider.cpp
     # Executor components (composition)
     src/executor/executable_resolver.cpp
     src/executor/environment_expander.cpp

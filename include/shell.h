@@ -10,53 +10,64 @@
 #include "shell/shell_state.h"
 #include "shell/builtin_handler.h"
 #include "shell/job_manager.h"
+#include <readline/history.h>
 #include <string>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 namespace helix {
 
-// Main shell class managing the REPL loop using composition
-// Delegates specialized tasks to focused components:
-// - BuiltinCommandDispatcher for built-in commands
-// - JobManager for job control
-// - ShellState for environment and state management
 class Shell {
 public:
     Shell();
     ~Shell();
 
-    // Main REPL loop - runs until exit
     int run();
+    int runCommand(const std::string& cmd);
+    int runStdin();
+    int runScript(const char* path, int argc, char* argv[]);
 
-    // Public version for testing
     bool processInputString(const std::string& input) { return processInput(input); }
 
 private:
-    // Core REPL components
     void showPrompt();
     std::string readInput();
     bool processInput(const std::string& input);
+    bool runSingleCommand(const std::string& trimmed);
 
-    // Autocompletion
-    std::vector<std::string> getCommandCompletions(const std::string& partial) const;
-    std::vector<std::string> getPathCompletions(const std::string& partial) const;
-    std::string handleTabCompletion(const std::string& currentInput, size_t cursorPos);
+    int runBlock(const std::vector<std::string>& lines);
+    bool invokeFunction(const std::string& name, const std::vector<std::string>& args);
+    int executeIf(const std::vector<std::string>& lines);
+    int executeWhile(const std::vector<std::string>& lines, bool until = false);
+    int executeFor(const std::vector<std::string>& lines);
+    int executeCase(const std::vector<std::string>& lines);
 
-    // Shell state (centralized)
+    std::string expandAliases(const std::string& line) const;
+    std::string expandHistory(const std::string& line) const;
+
+    void loadHistory();
+    void saveHistory();
+    void loadRcFile();
+
+    static std::string trimWhitespace(const std::string& s);
+
     ShellState state;
-
-    // Command processing components
     Tokenizer tokenizer;
     Parser parser;
     Executor executor;
-
-    // Prompt generator
     Prompt prompt;
 
-    // Component instances (composition via interfaces - Dependency Inversion Principle)
     std::unique_ptr<IBuiltinDispatcher> builtin_dispatcher;
     std::unique_ptr<IJobManager> job_manager;
+
+    std::vector<std::string> session_history_;
+    std::chrono::milliseconds last_duration_{0};
+
+    // Multi-line block accumulation
+    std::vector<std::string> block_stack_;  // stack of opener keywords
+    std::vector<std::string> block_lines_;  // accumulated lines
+    std::string pending_func_name_;         // function name being defined
 };
 
 } // namespace helix

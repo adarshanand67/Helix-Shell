@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <cstring>
+#include <glob.h>
 
 namespace helix {
 
@@ -136,8 +137,10 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
             return 0;
         } else {
             // Wait for child process completion (foreground)
+            // ECHILD means SIGCHLD handler already reaped it — not an error
             int status;
             if (waitpid(pid, &status, 0) == -1) {
+                if (errno == ECHILD) return 0;
                 reportError("Wait failed");
                 return -1;
             }
@@ -155,15 +158,40 @@ int Executor::executeSingleCommand(const Command& cmd, int input_fd, int output_
     }
 }
 
+// Expand globs in a single argument — returns 1+ args (or the original if no match)
+static std::vector<std::string> expandGlob(const std::string& arg) {
+    // Only bother if the arg contains a glob metacharacter
+    if (arg.find_first_of("*?[") == std::string::npos) return {arg};
+
+    glob_t g;
+    int rc = glob(arg.c_str(), GLOB_TILDE | GLOB_NOCHECK, nullptr, &g);
+    std::vector<std::string> result;
+    if (rc == 0) {
+        for (size_t i = 0; i < g.gl_pathc; ++i)
+            result.emplace_back(g.gl_pathv[i]);
+    } else {
+        result.push_back(arg); // no match — pass through unchanged
+    }
+    globfree(&g);
+    return result;
+}
+
 void Executor::executeCommandInChild(const Command& cmd) {
     if (cmd.args.empty()) {
         exit(1);
     }
 
-    // Expand environment variables using EnvironmentVariableExpander
-    std::vector<std::string> expanded_args = cmd.args;
-    for (auto& arg : expanded_args) {
-        arg = env_expander->expand(arg);
+    // Expand environment variables (including $(...) command substitution)
+    std::vector<std::string> expanded_args;
+    for (size_t i = 0; i < cmd.args.size(); ++i) {
+        std::string arg = env_expander->expand(cmd.args[i]);
+        if (i == 0) {
+            // Don't glob-expand the command name
+            expanded_args.push_back(std::move(arg));
+        } else {
+            auto globs = expandGlob(arg);
+            for (auto& g : globs) expanded_args.push_back(std::move(g));
+        }
     }
 
     // Find executable using ExecutableResolver
@@ -182,17 +210,7 @@ void Executor::executeCommandInChild(const Command& cmd) {
         close(fd);
     }
 
-    // Build arguments for exec
     std::vector<char*> argv = buildArgv(exec_args);
-
-    // Debug: print the command being executed
-    std::cerr << "Executing: " << executable;
-    for (size_t i = 1; i < exec_args.size(); ++i) {
-        std::cerr << " '" << exec_args[i] << "'";
-    }
-    std::cerr << std::endl;
-
-    // Execute the command
     execvp(executable.c_str(), &argv[0]);
 
     // If we reach here, exec failed

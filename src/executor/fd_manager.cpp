@@ -28,19 +28,46 @@ FileDescriptorManager::~FileDescriptorManager() {
 }
 
 bool FileDescriptorManager::setupRedirections(const Command& cmd, int& input_fd, int& output_fd) {
-    // Setup input redirection
-    if (!setupInputRedirection(cmd, input_fd)) {
-        return false;
+    // Here-string: wire a pipe containing the string to stdin
+    if (!cmd.herestring.empty()) {
+        int pipefd[2];
+        if (pipe(pipefd) == 0) {
+            std::string content = cmd.herestring + "\n";
+            write(pipefd[1], content.c_str(), content.size());
+            close(pipefd[1]);
+            dup2(pipefd[0], STDIN_FILENO);
+            close(pipefd[0]);
+        }
+    }
+    // Here-doc: content should be pre-filled by shell layer into heredoc_content
+    if (!cmd.heredoc_content.empty()) {
+        int pipefd[2];
+        if (pipe(pipefd) == 0) {
+            write(pipefd[1], cmd.heredoc_content.c_str(), cmd.heredoc_content.size());
+            close(pipefd[1]);
+            dup2(pipefd[0], STDIN_FILENO);
+            close(pipefd[0]);
+        }
     }
 
-    // Setup output redirection
-    if (!setupOutputRedirection(cmd, output_fd)) {
-        return false;
+    if (!setupInputRedirection(cmd, input_fd)) return false;
+    if (!setupOutputRedirection(cmd, output_fd)) return false;
+    if (!setupErrorRedirection(cmd)) return false;
+
+    // &> redirects both stdout and stderr to the same file
+    if (cmd.both_to_file && !cmd.output_file.empty()) {
+        int flags = O_WRONLY | O_CREAT | (cmd.both_append ? O_APPEND : O_TRUNC);
+        int fd = open(cmd.output_file.c_str(), flags, 0644);
+        if (fd != -1) {
+            dup2(fd, STDOUT_FILENO);
+            dup2(fd, STDERR_FILENO);
+            close(fd);
+        }
     }
 
-    // Setup error redirection
-    if (!setupErrorRedirection(cmd)) {
-        return false;
+    // 2>&1 — redirect stderr to current stdout
+    if (cmd.stderr_to_stdout) {
+        dup2(STDOUT_FILENO, STDERR_FILENO);
     }
 
     return true;

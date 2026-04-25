@@ -1,5 +1,5 @@
-#include "parser.h" // Includes the Parser class definition, providing parse() method to convert token sequences into ParsedCommand structures, including pipeline and redirection handling.
-#include <iostream> // Provides standard error stream: std::cerr for reporting parsing errors - used when unexpected tokens are encountered during command analysis.
+#include "parser.h"
+#include <iostream>
 
 namespace helix {
 
@@ -7,31 +7,25 @@ ParsedCommand Parser::parse(const std::vector<Token>& tokens) {
     ParsedCommand result;
     size_t pos = 0;
 
-    // Parse the pipeline of commands
     while (pos < tokens.size() && tokens[pos].type != TokenType::END_OF_INPUT) {
-        // Parse a single command in the pipeline
+        // Skip leading semicolons / newlines
+        if (tokens[pos].type == TokenType::SEMICOLON || tokens[pos].type == TokenType::NEWLINE) {
+            ++pos; continue;
+        }
+
         Command cmd = parseSingleCommand(pos, tokens);
         result.pipeline.commands.push_back(cmd);
 
-        // Check if there's a pipe to continue the pipeline
         if (pos < tokens.size() && tokens[pos].type == TokenType::PIPE) {
-            pos++; // Skip the pipe token
-            // Continue to next command in pipeline
+            ++pos;
         } else {
-            break; // End of pipeline
+            break;
         }
     }
 
-    // Check for background execution (&)
     if (pos < tokens.size() && tokens[pos].type == TokenType::BACKGROUND) {
         result.background = true;
-        pos++;
-    }
-
-    // The pipeline should end at END_OF_INPUT
-    if (pos >= tokens.size() || tokens[pos].type != TokenType::END_OF_INPUT) {
-        // Error: unexpected tokens
-        std::cerr << "Parse error: unexpected tokens at end of command\n";
+        ++pos;
     }
 
     return result;
@@ -39,31 +33,24 @@ ParsedCommand Parser::parse(const std::vector<Token>& tokens) {
 
 Command Parser::parseSingleCommand(size_t& pos, const std::vector<Token>& tokens) {
     Command cmd;
-
-    // Parse command arguments
     parseArguments(pos, tokens, cmd);
-
-    // Parse redirections
     parseRedirections(pos, tokens, cmd);
-
     return cmd;
 }
 
 void Parser::parseArguments(size_t& pos, const std::vector<Token>& tokens, Command& cmd) {
-    // Collect all WORD tokens until we hit a redirection, pipe, background, semicolon, or end
     while (pos < tokens.size()) {
         TokenType type = tokens[pos].type;
 
         if (type == TokenType::WORD) {
             cmd.args.push_back(tokens[pos].value);
-            pos++;
+            ++pos;
         } else if (type == TokenType::PIPE || type == TokenType::BACKGROUND ||
-                   type == TokenType::SEMICOLON || type == TokenType::END_OF_INPUT) {
-            // Stop parsing arguments
+                   type == TokenType::SEMICOLON || type == TokenType::NEWLINE ||
+                   type == TokenType::END_OF_INPUT) {
             break;
         } else {
-            // Hit a redirection, parse it later
-            break;
+            break; // redirection follows
         }
     }
 }
@@ -72,69 +59,70 @@ void Parser::parseRedirections(size_t& pos, const std::vector<Token>& tokens, Co
     while (pos < tokens.size()) {
         TokenType type = tokens[pos].type;
 
+        auto needWord = [&]() -> bool {
+            ++pos;
+            return pos < tokens.size() && tokens[pos].type == TokenType::WORD;
+        };
+
         if (type == TokenType::REDIRECT_IN) {
-            // Input redirection: < filename
-            pos++; // Skip <
-            if (pos < tokens.size() && tokens[pos].type == TokenType::WORD) {
-                cmd.input_file = tokens[pos].value;
-                pos++;
-            } else {
-                std::cerr << "Parse error: expected filename after <\n";
-                break;
-            }
+            if (needWord()) { cmd.input_file = tokens[pos].value; ++pos; }
+            else { std::cerr << "Parse error: expected filename after <\n"; break; }
+
         } else if (type == TokenType::REDIRECT_OUT) {
-            // Output redirection: > filename
-            pos++; // Skip >
-            if (pos < tokens.size() && tokens[pos].type == TokenType::WORD) {
-                cmd.output_file = tokens[pos].value;
-                cmd.append_mode = false;
-                pos++;
-            } else {
-                std::cerr << "Parse error: expected filename after >\n";
-                break;
-            }
+            if (needWord()) { cmd.output_file = tokens[pos].value; cmd.append_mode = false; ++pos; }
+            else { std::cerr << "Parse error: expected filename after >\n"; break; }
+
         } else if (type == TokenType::REDIRECT_OUT_APPEND) {
-            // Append output redirection: >> filename
-            pos++; // Skip >>
-            if (pos < tokens.size() && tokens[pos].type == TokenType::WORD) {
-                cmd.output_file = tokens[pos].value;
-                cmd.append_mode = true;
-                pos++;
-            } else {
-                std::cerr << "Parse error: expected filename after >>\n";
-                break;
-            }
+            if (needWord()) { cmd.output_file = tokens[pos].value; cmd.append_mode = true; ++pos; }
+            else { std::cerr << "Parse error: expected filename after >>\n"; break; }
+
         } else if (type == TokenType::REDIRECT_ERR) {
-            // Error redirection: 2> filename
-            pos++; // Skip 2>
-            if (pos < tokens.size() && tokens[pos].type == TokenType::WORD) {
-                cmd.error_file = tokens[pos].value;
-                cmd.error_append_mode = false;
-                pos++;
-            } else {
-                std::cerr << "Parse error: expected filename after 2>\n";
-                break;
-            }
+            if (needWord()) { cmd.error_file = tokens[pos].value; cmd.error_append_mode = false; ++pos; }
+            else { std::cerr << "Parse error: expected filename after 2>\n"; break; }
+
         } else if (type == TokenType::REDIRECT_ERR_APPEND) {
-            // Append error redirection: 2>> filename
-            pos++; // Skip 2>>
+            if (needWord()) { cmd.error_file = tokens[pos].value; cmd.error_append_mode = true; ++pos; }
+            else { std::cerr << "Parse error: expected filename after 2>>\n"; break; }
+
+        } else if (type == TokenType::REDIRECT_ERR_TO_OUT) {
+            cmd.stderr_to_stdout = true;
+            ++pos;
+
+        } else if (type == TokenType::REDIRECT_BOTH) {
+            if (needWord()) { cmd.output_file = tokens[pos].value; cmd.both_to_file = true; cmd.both_append = false; ++pos; }
+            else { std::cerr << "Parse error: expected filename after &>\n"; break; }
+
+        } else if (type == TokenType::REDIRECT_BOTH_APPEND) {
+            if (needWord()) { cmd.output_file = tokens[pos].value; cmd.both_to_file = true; cmd.both_append = true; ++pos; }
+            else { std::cerr << "Parse error: expected filename after &>>\n"; break; }
+
+        } else if (type == TokenType::HEREDOC || type == TokenType::HEREDOC_STRIP) {
+            bool strip = (type == TokenType::HEREDOC_STRIP);
+            ++pos;
             if (pos < tokens.size() && tokens[pos].type == TokenType::WORD) {
-                cmd.error_file = tokens[pos].value;
-                cmd.error_append_mode = true;
-                pos++;
+                cmd.heredoc_delim = tokens[pos].value;
+                cmd.heredoc_strip = strip;
+                ++pos;
             } else {
-                std::cerr << "Parse error: expected filename after 2>>\n";
-                break;
+                std::cerr << "Parse error: expected delimiter after <<\n"; break;
             }
+
+        } else if (type == TokenType::HERESTRING) {
+            ++pos;
+            if (pos < tokens.size() && tokens[pos].type == TokenType::WORD) {
+                cmd.herestring = tokens[pos].value;
+                ++pos;
+            } else {
+                std::cerr << "Parse error: expected word after <<<\n"; break;
+            }
+
         } else {
-            // Not a redirection token, stop parsing redirections
             break;
         }
     }
 }
 
 std::string Parser::extractFilename(const Token& token) {
-    // This method might be extended for more complex filename handling
     return token.value;
 }
 

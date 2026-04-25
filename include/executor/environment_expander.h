@@ -3,26 +3,23 @@
 
 #include "executor/interfaces.h"
 #include <string>
+#include <pwd.h>
 
 namespace helix {
 
-// EnvironmentVariableExpander - Handles environment variable expansion
-// Implements IEnvironmentExpander interface (Dependency Inversion Principle)
-// Responsibilities:
-// - Expand $VAR and ${VAR} syntax in strings
-// - Handle missing environment variables gracefully
+struct ShellState;
+
 class EnvironmentVariableExpander : public IEnvironmentExpander {
 public:
     EnvironmentVariableExpander() = default;
     ~EnvironmentVariableExpander() override = default;
 
-    // Expand environment variables in a string
-    // Supports both $VAR and ${VAR} syntax
     std::string expand(const std::string& input) const override;
+    std::string expandWithState(const std::string& input, const ShellState* state) const;
 
 private:
-    // Get value of an environment variable
     std::string getVariableValue(const std::string& name) const;
+    std::string getVariableValueWithState(const std::string& name, const ShellState* state) const;
 };
 
 } // namespace helix
