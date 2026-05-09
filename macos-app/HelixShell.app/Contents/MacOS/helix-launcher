@@ -1,0 +1,41 @@
+#!/bin/bash
+# Launcher for Helix Shell .app bundle.
+# Opens the system Terminal (or iTerm2 if installed) running helix.
+
+BUNDLE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+HELIX="$BUNDLE_DIR/MacOS/helix"
+
+# Fall back to helix on PATH if bundled binary is absent
+if [ ! -x "$HELIX" ]; then
+    HELIX="$(command -v helix 2>/dev/null)"
+fi
+
+if [ -z "$HELIX" ] || [ ! -x "$HELIX" ]; then
+    osascript -e 'display alert "Helix Shell" message "Could not find the helix binary. Run: brew install helix-shell-bin" as warning'
+    exit 1
+fi
+
+# Strip Gatekeeper quarantine from the bundled binary so macOS doesn't kill it
+xattr -dr com.apple.quarantine "$HELIX" 2>/dev/null
+# Ad-hoc code sign if not already signed with a real identity
+codesign --force --sign - "$HELIX" 2>/dev/null
+
+# Prefer iTerm2, fall back to Terminal.app
+# Always open a NEW WINDOW, never a tab
+if [ -d "/Applications/iTerm.app" ]; then
+    osascript <<APPLE
+tell application "iTerm2"
+    activate
+    create window with default profile command "$HELIX"
+end tell
+APPLE
+else
+    osascript <<APPLE
+tell application "Terminal"
+    activate
+    set w to (make new document)
+    do script "$HELIX" in w
+    set custom title of w to "Helix Shell"
+end tell
+APPLE
+fi

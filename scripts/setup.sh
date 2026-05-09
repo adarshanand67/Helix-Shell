@@ -25,7 +25,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo ""
     echo "📦 Installing dependencies..."
 
-    DEPS=("pkg-config" "cppunit" "readline")
+    DEPS=("cmake" "pkg-config" "cppunit" "readline")
 
     for dep in "${DEPS[@]}"; do
         if brew list "$dep" &>/dev/null; then
@@ -43,11 +43,11 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if command -v apt-get &> /dev/null; then
         echo "📦 Installing dependencies via apt..."
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev
+        sudo apt-get install -y cmake build-essential pkg-config libcppunit-dev libreadline-dev
     # Check for yum (RedHat/CentOS)
     elif command -v yum &> /dev/null; then
         echo "📦 Installing dependencies via yum..."
-        sudo yum install -y gcc-c++ make pkg-config cppunit-devel
+        sudo yum install -y cmake gcc-c++ make pkg-config cppunit-devel readline-devel
     else
         echo "❌ Unsupported package manager"
         echo "   Please install manually: pkg-config, cppunit"

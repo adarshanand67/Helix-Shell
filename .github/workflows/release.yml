@@ -3,8 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger on version tags like v1.0.0
-  workflow_dispatch:  # Allow manual trigger
+      - 'v*.*.*'
+  workflow_dispatch:
     inputs:
       version:
         description: 'Release version (e.g., v1.0.0)'
@@ -13,18 +13,18 @@ on:
 
 permissions:
   contents: write
-  discussions: write
 
 jobs:
+  # ── Create the GitHub release shell ────────────────────────────────────────
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
+      bare: ${{ steps.get_version.outputs.bare }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -36,73 +36,49 @@ jobs:
           else
             VERSION=${GITHUB_REF#refs/tags/}
           fi
+          BARE="${VERSION#v}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
+          echo "bare=$BARE"       >> $GITHUB_OUTPUT
 
-      - name: Generate Release Notes
-        id: release_notes
+      - name: Generate release notes
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 ${VERSION}^ 2>/dev/null || echo "")
-
-          if [ -z "$PREV_TAG" ]; then
-            CHANGELOG="Initial release"
-          else
-            CHANGELOG=$(git log --oneline --pretty=format:"- %s" ${PREV_TAG}..${VERSION})
-          fi
-
+          PREV=$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || echo "")
+          CHANGELOG=$([ -n "$PREV" ] && git log --oneline --pretty=format:"- %s" "${PREV}..${VERSION}" || echo "- Initial release")
           cat > release-notes.md <<EOF
           # Helix Shell ${VERSION}
 
           ## What's Changed
-
           ${CHANGELOG}
 
           ## Features
+          - Built-in AI assistant: \`ai suggest\`, \`ai explain\`, \`ai fix\`, \`ai run\`
+          - Full REPL with readline, Ctrl+R history search
+          - Git-aware prompt with staged/dirty/untracked icons
+          - Job control (jobs, fg, bg, SIGCHLD)
+          - Pipeline, I/O redirection, &&, ||, ;
+          - Scripting: \`helix -c\`, \`helix script.sh\`, \`set -e/-x/-u\`, \`test\`/\`[\`
+          - Builtins: cd, pwd, export, alias, pushd/popd/dirs, read, source, which, type
 
-          - ✅ Full REPL with readline support
-          - ✅ Job control with fg/bg/jobs commands
-          - ✅ SIGCHLD signal handling for background jobs
-          - ✅ Pipeline support with multiple stages
-          - ✅ I/O redirection (<, >, >>, 2>, 2>>)
-          - ✅ Built-in commands (cd, pwd, export, history, exit)
-          - ✅ Tab autocompletion for commands and paths
-          - ✅ Colored prompt with Git integration
+          ## Install
 
-          ## Installation
-
-          ### macOS (ARM64)
+          **macOS — one command:**
           \`\`\`bash
-          curl -LO https://github.com/adarshanand67/Helix-Shell/releases/download/${VERSION}/helix-${VERSION}-macos-arm64.tar.gz
-          tar xzf helix-${VERSION}-macos-arm64.tar.gz
-          sudo mv helix /usr/local/bin/
+          brew tap adarshanand67/helix-shell https://github.com/adarshanand67/Helix-Shell
+          brew install helix-shell-bin   # pre-built, fastest
+          # or: brew install helix-shell  # build from source
+          # or: brew install --cask helix-shell  # .app GUI wrapper
           \`\`\`
 
-          Or via Homebrew:
+          **Linux:**
           \`\`\`bash
-          brew tap adarshanand67/helix-shell
-          brew install helix-shell
+          curl -fsSL https://raw.githubusercontent.com/adarshanand67/Helix-Shell/master/scripts/install.sh | bash
           \`\`\`
 
-          ### Linux (x86_64)
-          \`\`\`bash
-          curl -LO https://github.com/adarshanand67/Helix-Shell/releases/download/${VERSION}/helix-${VERSION}-linux-x86_64.tar.gz
-          tar xzf helix-${VERSION}-linux-x86_64.tar.gz
-          sudo mv helix /usr/local/bin/
-          \`\`\`
-
-          ### Windows
-          Helix Shell is a POSIX-compliant shell. Windows users can run it via WSL (Windows Subsystem for Linux).
-
-          ### Docker
-          \`\`\`bash
-          docker pull adarshanand67/helixshell:${VERSION}
-          \`\`\`
-
-          **Full Changelog**: https://github.com/adarshanand67/Helix-Shell/compare/${PREV_TAG}...${VERSION}
+          **Full Changelog**: https://github.com/adarshanand67/Helix-Shell/compare/${PREV}...${VERSION}
           EOF
 
-      - name: Create Release
+      - name: Create GitHub release
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -114,77 +90,254 @@ jobs:
           draft: false
           prerelease: false
 
+  # ── Linux x86_64 ────────────────────────────────────────────────────────────
   build-linux:
     name: Build Linux (x86_64)
     needs: create-release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ libreadline-dev libcppunit-dev
+          sudo apt-get install -y cmake build-essential pkg-config libreadline-dev libcppunit-dev
 
       - name: Build
         run: |
-          mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release ..
-          make -j$(nproc)
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j$(nproc)
 
-      - name: Create archive
+      - name: Package
         run: |
           VERSION="${{ needs.create-release.outputs.version }}"
-          mkdir -p release
-          cp build/helix release/
-          chmod +x release/helix
-          cd release
-          tar -czf helix-${VERSION}-linux-x86_64.tar.gz helix
+          mkdir -p dist
+          cp build/helix dist/
+          chmod +x dist/helix
+          cd dist && tar -czf "helix-${VERSION}-linux-x86_64.tar.gz" helix
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-linux-x86_64.tar.gz
+          asset_path: ./dist/helix-${{ needs.create-release.outputs.version }}-linux-x86_64.tar.gz
           asset_name: helix-${{ needs.create-release.outputs.version }}-linux-x86_64.tar.gz
           asset_content_type: application/gzip
 
-  build-macos:
+  # ── macOS ARM64 (Apple Silicon) ─────────────────────────────────────────────
+  build-macos-arm64:
     name: Build macOS (ARM64)
     needs: create-release
     runs-on: macos-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          brew install cmake cppunit
+        run: brew install cmake cppunit pkg-config
 
       - name: Build
         run: |
-          mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release ..
-          make -j$(sysctl -n hw.ncpu)
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake --build build -j$(sysctl -n hw.ncpu)
 
-      - name: Create archive
+      - name: Package
         run: |
           VERSION="${{ needs.create-release.outputs.version }}"
-          mkdir -p release
-          cp build/helix release/
-          chmod +x release/helix
-          cd release
-          tar -czf helix-${VERSION}-macos-arm64.tar.gz helix
+          mkdir -p dist
+          cp build/helix dist/helix-arm64
+          chmod +x dist/helix-arm64
+          cd dist && tar -czf "helix-${VERSION}-macos-arm64.tar.gz" helix-arm64
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: dist/helix-arm64
+
+      - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./release/helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
+          asset_path: ./dist/helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
           asset_name: helix-${{ needs.create-release.outputs.version }}-macos-arm64.tar.gz
           asset_content_type: application/gzip
+
+  # ── macOS x86_64 (Intel) ────────────────────────────────────────────────────
+  build-macos-x86_64:
+    name: Build macOS (x86_64)
+    needs: create-release
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install cmake cppunit pkg-config
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+          cmake --build build -j$(sysctl -n hw.ncpu)
+
+      - name: Package
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          mkdir -p dist
+          cp build/helix dist/helix-x86_64
+          chmod +x dist/helix-x86_64
+          cd dist && tar -czf "helix-${VERSION}-macos-x86_64.tar.gz" helix-x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-x86_64
+          path: dist/helix-x86_64
+
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/helix-${{ needs.create-release.outputs.version }}-macos-x86_64.tar.gz
+          asset_name: helix-${{ needs.create-release.outputs.version }}-macos-x86_64.tar.gz
+          asset_content_type: application/gzip
+
+  # ── macOS Universal binary ──────────────────────────────────────────────────
+  build-macos-universal:
+    name: Build macOS (Universal)
+    needs: [create-release, build-macos-arm64, build-macos-x86_64]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-arm64
+          path: dist/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-x86_64
+          path: dist/
+
+      - name: Create universal binary
+        run: |
+          chmod +x dist/helix-arm64 dist/helix-x86_64
+          lipo -create dist/helix-arm64 dist/helix-x86_64 -output dist/helix
+          chmod +x dist/helix
+
+      - name: Package universal tarball
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          cd dist && tar -czf "helix-${VERSION}-macos-universal.tar.gz" helix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: dist/helix
+
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/helix-${{ needs.create-release.outputs.version }}-macos-universal.tar.gz
+          asset_name: helix-${{ needs.create-release.outputs.version }}-macos-universal.tar.gz
+          asset_content_type: application/gzip
+
+  # ── macOS .app DMG (for Homebrew cask) ─────────────────────────────────────
+  build-macos-dmg:
+    name: Build macOS DMG (GUI cask)
+    needs: [create-release, build-macos-universal]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-universal
+          path: build/
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Package .app into DMG
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          BARE="${{ needs.create-release.outputs.bare }}"
+          chmod +x build/helix
+          bash scripts/package-macos-app.sh "v${BARE}"
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          SHA=$(shasum -a 256 "release/Helix-Shell-${VERSION}-macos.dmg" | awk '{print $1}')
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+          echo "DMG SHA256: $SHA"
+
+      - name: Push cask sha256 to tap repo
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          BARE="${{ needs.create-release.outputs.bare }}"
+          SHA="${{ steps.sha.outputs.sha256 }}"
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/adarshanand67/homebrew-helix-shell.git" tap
+          cd tap
+          sed -i '' \
+            -e "s|version \"[^\"]*\"|version \"${BARE}\"|" \
+            -e "s|sha256 :no_check|sha256 \"${SHA}\"|" \
+            Casks/helix-shell.rb
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/helix-shell.rb
+          git diff --staged --quiet || git commit -m "chore: update cask sha256 for ${VERSION}"
+          git push origin main
+
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./release/Helix-Shell-${{ needs.create-release.outputs.version }}-macos.dmg
+          asset_name: Helix-Shell-${{ needs.create-release.outputs.version }}-macos.dmg
+          asset_content_type: application/octet-stream
+
+  # ── Push updated formulas to homebrew-helix-shell tap repo ────────────────
+  update-tap:
+    name: Update homebrew-helix-shell tap
+    needs: [create-release, build-linux, build-macos-arm64, build-macos-x86_64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compute source tarball sha256
+        id: src_sha
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          SHA=$(curl -fsSL "https://github.com/adarshanand67/Helix-Shell/archive/refs/tags/${VERSION}.tar.gz" | shasum -a 256 | awk '{print $1}')
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+
+      - name: Clone tap repo
+        run: |
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/adarshanand67/homebrew-helix-shell.git" tap
+
+      - name: Patch formulas
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          BARE="${{ needs.create-release.outputs.bare }}"
+          SHA="${{ steps.src_sha.outputs.sha256 }}"
+          cd tap
+          # Source build formula — bump url + sha256
+          sed -i \
+            -e "s|url \".*archive/refs/tags/.*\"|url \"https://github.com/adarshanand67/Helix-Shell/archive/refs/tags/${VERSION}.tar.gz\"|" \
+            -e "s|sha256 \"[a-f0-9]*\"|sha256 \"${SHA}\"|" \
+            Formula/helix-shell.rb
+          # Pre-built binary formula — bump version only (sha256 :no_check kept)
+          sed -i "s|version \"[^\"]*\"|version \"${BARE}\"|" Formula/helix-shell-bin.rb
+
+      - name: Commit and push to tap
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          cd tap
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/helix-shell.rb Formula/helix-shell-bin.rb
+          git diff --staged --quiet || git commit -m "chore: bump formulas to ${VERSION}"
+          git push origin main

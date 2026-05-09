@@ -34,9 +34,10 @@ jobs:
     - name: Install dependencies
       run: |
         brew update
-        brew install cppunit pkg-config readline
+        brew install cmake cppunit pkg-config readline
 
         # Verify installations
+        echo "✅ cmake $(cmake --version | head -1)"
         echo "✅ CppUnit $(pkg-config --modversion cppunit)"
         echo "✅ pkg-config $(pkg-config --version)"
 
@@ -54,11 +55,11 @@ jobs:
       run: |
         echo "📦 Verifying build artifacts..."
         ls -lh build/
-        file build/hsh
+        file build/helix
         file build/hsh_tests
 
         # Check executables exist and are executable
-        test -x build/hsh || exit 1
+        test -x build/helix || exit 1
         test -x build/hsh_tests || exit 1
         echo "✅ All artifacts verified"
 
@@ -82,7 +83,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev
+        sudo apt-get install -y cmake build-essential pkg-config libcppunit-dev libreadline-dev
 
     - name: Build project
       run: |
@@ -112,7 +113,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev lcov
+        sudo apt-get install -y cmake build-essential pkg-config libcppunit-dev libreadline-dev lcov
         which gcov || (sudo apt-get install -y gcc && gcov --version)
 
     - name: Build with coverage instrumentation
@@ -244,7 +245,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev valgrind
+        sudo apt-get install -y cmake build-essential pkg-config libcppunit-dev libreadline-dev valgrind
 
     - name: Build for memory testing
       run: |
@@ -373,7 +374,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential pkg-config libcppunit-dev libreadline-dev
+        sudo apt-get install -y cmake build-essential pkg-config libcppunit-dev libreadline-dev
 
     - name: Build
       run: make build
