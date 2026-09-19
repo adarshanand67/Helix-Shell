@@ -14,7 +14,8 @@ namespace helix {
 static std::string captureSubshell(const std::string& cmd) {
     std::string result;
     std::array<char, 256> buf;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    auto closer = [](FILE* f) { if (f) pclose(f); };
+    std::unique_ptr<FILE, decltype(closer)> pipe(popen(cmd.c_str(), "r"), closer);
     if (!pipe) return "";
     while (fgets(buf.data(), buf.size(), pipe.get())) result += buf.data();
     while (!result.empty() && result.back() == '\n') result.pop_back();

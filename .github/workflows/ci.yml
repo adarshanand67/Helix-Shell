@@ -218,9 +218,9 @@ jobs:
           echo "⚠️  Warning: Found raw new/delete. Consider using smart pointers."
         fi
 
-        # Check for unsafe functions
+        # Check for unsafe functions (word-boundary match to avoid false positives like fgets/snprintf)
         echo "Checking for unsafe functions..."
-        if grep -rn "strcpy\|strcat\|sprintf\|gets" src/ include/; then
+        if grep -Prn '\b(strcpy|strcat|sprintf|(?<!f)gets)\s*\(' src/ include/; then
           echo "❌ Error: Found unsafe string functions!"
           exit 1
         fi

@@ -120,8 +120,9 @@ std::string Prompt::getGitStatus() const {
     // Use popen so we don't need to fork/exec ourselves
     std::array<char, 512> buf;
     std::string output;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(
-        popen("git -C . status --porcelain 2>/dev/null", "r"), pclose);
+    auto closer = [](FILE* f) { if (f) pclose(f); };
+    std::unique_ptr<FILE, decltype(closer)> pipe(
+        popen("git -C . status --porcelain 2>/dev/null", "r"), closer);
     if (!pipe) return "";
 
     while (fgets(buf.data(), buf.size(), pipe.get())) {

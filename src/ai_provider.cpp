@@ -8,7 +8,8 @@ namespace helix {
 static std::string runCurl(const std::string& cmd) {
     std::array<char, 256> buf;
     std::string out;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    auto closer = [](FILE* f) { if (f) pclose(f); };
+    std::unique_ptr<FILE, decltype(closer)> pipe(popen(cmd.c_str(), "r"), closer);
     if (!pipe) return "";
     while (fgets(buf.data(), buf.size(), pipe.get())) out += buf.data();
     return out;
