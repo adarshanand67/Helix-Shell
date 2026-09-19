@@ -22,7 +22,7 @@ echo ""
 # Check if formula file exists
 if [ ! -f "$FORMULA_FILE" ]; then
     echo "❌ Error: Formula file not found: $FORMULA_FILE"
-    echo "Are you in the homebrew-helix-shell repository?"
+    echo "Are you in the Helix-Shell repository root?"
     exit 1
 fi
 

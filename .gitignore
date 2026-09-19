@@ -21,6 +21,11 @@ hsh
 # Temporary files
 *.tmp
 *.log
+*.bak
+
+# Formula update backups
+Formula/*.bak
+Casks/*.bak
 
 # Debug files
 *.dSYM/

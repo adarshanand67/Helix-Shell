@@ -45,21 +45,23 @@ destructive.
 
 ## Install
 
+> **Homebrew tap** (`Formula/` and `Casks/`) lives right here in this repo.
+
 **macOS — pre-built binary (fastest, no compiler needed)**
 ```bash
-brew tap adarshanand67/helix-shell
+brew tap adarshanand67/helix-shell https://github.com/adarshanand67/Helix-Shell
 brew install helix-shell-bin
 ```
 
 **macOS — GUI .app**
 ```bash
-brew tap adarshanand67/helix-shell
+brew tap adarshanand67/helix-shell https://github.com/adarshanand67/Helix-Shell
 brew install --cask helix-shell
 ```
 
 **macOS — build from source**
 ```bash
-brew tap adarshanand67/helix-shell
+brew tap adarshanand67/helix-shell https://github.com/adarshanand67/Helix-Shell
 brew install helix-shell
 ```
 
